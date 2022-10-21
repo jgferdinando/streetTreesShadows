@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>Cornell DAS Lab NYC Tree Dashboard</title>
+		<script src='https://api.mapbox.com/mapbox-gl-js/v2.5.1/mapbox-gl.js'></script>
+		<script src="https://unpkg.com/deck.gl@^7.0.0/dist.min.js"></script>
+		<script src="./node_modules/suncalc/suncalc.js"></script>
+		<link href='https://api.mapbox.com/mapbox-gl-js/v1.8.1/mapbox-gl.css' rel='stylesheet' />
+		<link rel="stylesheet" type="text/css" href="css/style.css">
+		<style>
+			body { margin: 0; padding: 0; }
+			#map { position: absolute; top: 0; bottom: 0; width: 100%; }
+		</style>
+	</head>
+	<body>
+		<nav id="menu"></nav>
+		<div id='map'></div>
+		<div class="map-overlay">
+			<div style="float:left; padding: 15px 0; width:100%">
+				<p class="control-name">Day of the Year<input id='dayslider' type="range" class="slider" min="1" max="365" step='1' value="79" style="width: 80%; margin-left:10%;"/></p>
+			</div>
+			<div>
+				<p class="control-name">Hour<input id='hourslider' type="range" class="slider" min="7.52" max="17.07" step='0.05' value="12" style="width: 52%; margin-left:25%; "/></p>
+			</div>
+
+						<table style="width:100%;">
+							
+							<tr>
+
+								<td style="width:50%;">
+									<table>
+										<tr><td><a class="title" id="common" href="#" target="_blank">Common Name </a></td></tr>
+										<tr><td><p class="subtitle" id="latin">Latin Name </p></td></tr>
+									</table>								
+								</td>
+
+								<td style="width:25%;">
+									<table>
+										<tr><td><p class="section-name">Address </p></td><td><p class="attribute-name" id="address"> </p></td></tr>
+										<!-- <tr><td><p class="section-name">Zip Code </p></td><td><p class="attribute-name" id="zipcode"> </p></td></tr>
+										<tr><td><p class="section-name">Borough </p></td><td><p class="attribute-name" id="borough"> </p></td></tr> 
+										<tr><td><p class="section-name">Curb Location </p></td><td><p class="attribute-name" id="curb"> </p></td></tr> 
+										<tr><td><p class="section-name">Latitude </p></td><td><p class="attribute-name" id="lat"> </p></td></tr>
+										<tr><td><p class="section-name">Longitude </p></td><td><p class="attribute-name" id="lon"> </p></td></tr> -->
+										<tr><td><p class="section-name">Status </p></td><td><p class="attribute-name" id="status"> </p></td></tr>
+										<tr><td><p class="section-name">Health </p></td><td><p class="attribute-name" id="health"> </p></td></tr>
+										<tr><td><p class="section-name">Trunk Diameter (inches) </p></td><td><p class="attribute-name" id="trunk"> </p></td></tr>
+										<tr><td><p class="section-name">Expected Canopy Radius (feet) </p></td><td><p class="attribute-name" id="canopy"> </p></td></tr> 
+									</table>
+								</td>
+
+								<td style="width:25%;">
+									<table>
+										<tr><td><p class="section-name">Point Count In Shadow </p></td><td><p class="attribute-name" id="inshadow"> </p></td></tr>
+										<tr><td><p class="section-name">Point Count Shading Building </p></td><td><p class="attribute-name" id="shadingbuilding"> </p></td></tr>
+										<tr><td><p class="section-name">Point Count Shading Ground </p></td><td><p class="attribute-name" id="shadingground"> </p></td></tr>
+										<tr><td><p class="section-name">Lidar-derived Height (feet) </p></td><td><p class="attribute-name" id="height"> </p></td></tr>
+										<tr><td><p class="section-name">Lidar Return Density </p></td><td><p class="attribute-name" id="density"> </p></td></tr>
+									</table>
+								</td>
+
+							</tr>
+
+							
+
+						</table>
+
+		</div>
+
+
+		<script type='module'  src="js/nycTreesSingleShadow.js">
+		</script>
+	</body>
+</html>
