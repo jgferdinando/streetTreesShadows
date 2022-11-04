@@ -43,12 +43,6 @@ var building;
 		.then(data => buildings = data)
 		.then((json) => building = buildings.features[0]));
 
-
-//(fetch('./data/bondGardenBuildingEast.geojson')
-//    	.then((response) => response.json())
-//		.then(data => buildings = data)
-//		.then((json) => console.log(buildings.features[0])));
-
 ////////////
 
 map.on('load', function() {
@@ -84,7 +78,7 @@ map.on('load', function() {
 		'layout':{'visibility':'visible'},
 		'type': 'fill',
 		'paint': {
-			'fill-color': '#808080', // blue color fill
+			'fill-color': '#808080', 
 			'fill-opacity': 0.1
 			}
 			}
@@ -180,8 +174,8 @@ map.on('load', function() {
 	    	getPosition: d => [d[1], d[0], (d[2])],
 	    	getColor: d => pointColor( [d[1],d[0],d[2]], hullPoints, tanAmp, sinAmp, cosAz ),
 	    	sizeUnits: 'feet',
-	    	pointSize: 2,
-	    	opacity: 0.5,
+	    	pointSize: 3,
+	    	opacity: 0.8,
 	    	visible: true
 	    	}));
 
@@ -224,12 +218,12 @@ map.on('load', function() {
 
 		map.addLayer({
 			'id': buildingLayerName,
-			'type': 'line',
+			'type': 'fill',
 			'source': buildingSourceName, // reference the data source
 			'layout': {},
 			'paint': {
-				'line-color': '#000',
-				'line-width': 1
+				'fill-color': '#424359', // blue color fill
+				'fill-opacity': 0.2
 			}
 		});
 
@@ -243,7 +237,7 @@ map.on('load', function() {
 	    	getPosition: d => [ d[1] - (d[2]/tanAmp*(sinAz))/84540.70 , d[0] - (d[2]/tanAmp*(cosAz))/111047.70 , d[2]*0 ], //approx degree to meter conversion from here: http://www.csgnetwork.com/degreelenllavcalc.html
 	    	getColor: d => pointColor( [d[1],d[0],d[2]], hullPoints, tanAmp, sinAmp, cosAz ) ,   // [ d[2] , d[2], d[2], 255*(d[5]-d[4])-d[2] ],
 	    	sizeUnits: 'feet',
-	    	pointSize: 6,
+	    	pointSize: 4,
 	    	opacity: 0.1,
 	    	visible: true
 	    	}));
@@ -283,8 +277,11 @@ map.on('load', function() {
 
 
 		treeID = e.features[0].properties['tree_id'];
+
 		lat = e.features[0].properties['Latitude'];
 		lon = e.features[0].properties['longitude'];
+		species = e.features[0].properties['spc_common'];
+		console.log(treeID,species);
 
 		var pointCloudFile = 'data/pointCloudJSONs/';
 		var pointCloudFile = pointCloudFile.concat(treeID);
@@ -297,8 +294,8 @@ map.on('load', function() {
 	    	getPosition: d => [d[1], d[0], (d[2])],
 	    	getColor: d => [ d[3]*255, (d[3]*127+(d[3]*127*(d[5]-d[4]+1))), d[3]*255, 255*(d[5]-d[4]) ],
 	    	sizeUnits: 'feet',
-	    	pointSize: 2,
-	    	opacity: 0.5,
+	    	pointSize: 3,
+	    	opacity: 0.8,
 	    	visible: true
 	    	}));
 
@@ -309,14 +306,13 @@ map.on('load', function() {
 		date.setDate(date.getDate() +  day );
 		var offset = date.getTimezoneOffset();
 		date.setTime(date.getTime() + ( hour * 60 * 60 * 1000 ) + ( offset * 60 * 1000 ) );
-		shadow(treeID,date);
-		stretchHoursBar();
 		
-		species = e.features[0].properties['spc_common'];
+		
+		
 		document.getElementById("common").innerHTML = species.concat('<br> @ ').concat(date.toString().split("(").slice(0,1));
-		//var link =  'https://www.designacrossscales.org/public_test/html/'.concat(species,'.html');
-		//document.getElementById("common").setAttribute("href", link); 
-		//document.getElementById("common").setAttribute("href", link);
+		var link =  'https://www.designacrossscales.org/public_test/html/'.concat(species,'.html');
+		document.getElementById("common").setAttribute("href", link); 
+		document.getElementById("common").setAttribute("href", link);
 		document.getElementById("latin").innerHTML = e.features[0].properties['spc_latin'];
 		document.getElementById("address").innerHTML = e.features[0].properties['address'];
 		//document.getElementById("zipcode").innerHTML = e.features[0].properties['zipcode'];
@@ -330,6 +326,9 @@ map.on('load', function() {
 		document.getElementById("canopy").innerHTML = (e.features[0].properties['canopy_radius_calc_ft']);
 		document.getElementById("height").innerHTML = e.features[0].properties['zrange'];
 		document.getElementById("density").innerHTML = e.features[0].properties['density'];
+
+		shadow(treeID,date);
+		stretchHoursBar();
 
 		});
 
@@ -362,12 +361,15 @@ map.on('load', function() {
 					} else {}
 				};
 			return building;
+
 			};
 
 		(fetch('./data/tile987187buildings.geojson')
 	    	.then((response) => response.json())
 			.then(data => buildings = data)
 			.then((json) => building = buildingShadowUpdate(buildings) ));
+
+		
 
 		});
 
@@ -424,6 +426,12 @@ map.on('load', function() {
 		shadow(treeID,date);
 
 	});
+
+
+
+
+
+
 
 });
 
@@ -512,16 +520,15 @@ function pointColor(point,vs,tanAmp,sinAmp,cosAz) {
 
     if (insideGround && insideSky) {
     	shadedPoints.push([x,y,z]);
-    	return [50,100,200];
+    	return [25+z*5,50+z*8,100+z*7];
     } else if (insideGround && insideSky == false ) {
     	shadingPoints.push([x,y,z]);
-    	return [200,50,100];
+    	return [255, 50+z*10, 75];
     } else {
     	otherPoints.push([x,y,z]);
-    	return [50,75,50,200];
+    	return [75+(z*z*0.75), 175+z*10, 10+z*5];
     };
-
-};
+	};
 
 
 
@@ -536,8 +543,7 @@ function htmlCountUpdate(_callback){
 	document.getElementById("shadingground").innerHTML = (otherPoints.length).toString();
 
 	_callback();
-
-}
+	};
 
 
 
