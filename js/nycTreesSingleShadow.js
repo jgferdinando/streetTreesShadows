@@ -34,6 +34,7 @@ var otherPoints = [];
 
 var building;
 var selectedBins = [];
+var selectedBuildings = [];
 var buildingFilter = ["in", "bin"];
 
 //
@@ -144,6 +145,60 @@ map.on("load", function () {
   });
 
   //
+  function getBuildingShadow(building) {
+    var buildingHeight = building.properties.heightroof;
+    var buildingPoints = building.geometry.coordinates[0][0];
+    var buildingBin = building.properties.bin;
+    var buildingPointsGround = [];
+    var buildingSourceName = `building${buildingBin}ShadowSourceEast`;
+    var buildingLayerName = `building${buildingBin}ShadowLayerEast`;
+
+    if (map.getLayer(buildingLayerName)) {
+      map.removeLayer(buildingLayerName);
+    }
+
+    if (map.getSource(buildingSourceName)) {
+      map.removeSource(buildingSourceName);
+    }
+    for (let i = 0; i < buildingPoints.length; i++) {
+      buildingPointsGround.push(buildingPoints[i]);
+      var x = buildingPoints[i][0];
+      var y = buildingPoints[i][1];
+      var z = buildingHeight / 3.28;
+      var buildingPointGround = [
+        x - ((z / tanAmp) * sinAz) / 84540.7,
+        y - ((z / tanAmp) * cosAz) / 111047.7,
+      ];
+      buildingPointsGround.push(buildingPointGround);
+    }
+
+    var hullPoints = convexHull(buildingPointsGround);
+
+    // console.log(buildingSourceName, buildingLayerName);
+
+    map.addSource(buildingSourceName, {
+      type: "geojson",
+      data: {
+        type: "Feature",
+        geometry: {
+          type: "Polygon",
+          // These coordinates outline Maine.
+          coordinates: [hullPoints],
+        },
+      },
+    });
+
+    map.addLayer({
+      id: buildingLayerName,
+      type: "fill",
+      source: buildingSourceName, // reference the data source
+      layout: {},
+      paint: {
+        "fill-color": "#424359", // blue color fill
+        "fill-opacity": 0.2,
+      },
+    });
+  }
 
   var treeID;
 
@@ -174,89 +229,49 @@ map.on("load", function () {
     shadingPoints = [];
     otherPoints = [];
 
-    map.addLayer(
-      new MapboxLayer({
-        id: "tree",
-        type: PointCloudLayer,
-        data: pointCloudFile,
-        getPosition: (d) => [d[1], d[0], d[2]],
-        getColor: (d) =>
-          pointColor([d[1], d[0], d[2]], hullPoints, tanAmp, sinAmp, cosAz),
-        sizeUnits: "feet",
-        pointSize: 3,
-        opacity: 0.8,
-        visible: true,
-      })
-    );
+    // map.addLayer(
+    //   new MapboxLayer({
+    //     id: "tree",
+    //     type: PointCloudLayer,
+    //     data: pointCloudFile,
+    //     getPosition: (d) => [d[1], d[0], d[2]],
+    //     getColor: (d) =>
+    //       pointColor([d[1], d[0], d[2]], hullPoints, tanAmp, sinAmp, cosAz),
+    //     sizeUnits: "feet",
+    //     pointSize: 3,
+    //     opacity: 0.8,
+    //     visible: true,
+    //   })
+    // );
 
     //end update tree
 
     //add in building shadow code
 
-    var buildingHeight = building.properties.heightroof;
-    var buildingPoints = building.geometry.coordinates[0][0];
-
-    var buildingPointsGround = [];
-    for (let i = 0; i < buildingPoints.length; i++) {
-      buildingPointsGround.push(buildingPoints[i]);
-      var x = buildingPoints[i][0];
-      var y = buildingPoints[i][1];
-      var z = buildingHeight / 3.28;
-      var buildingPointGround = [
-        x - ((z / tanAmp) * sinAz) / 84540.7,
-        y - ((z / tanAmp) * cosAz) / 111047.7,
-      ];
-      buildingPointsGround.push(buildingPointGround);
+    for (var building of selectedBuildings) {
+      getBuildingShadow(building);
     }
-
-    var hullPoints = convexHull(buildingPointsGround);
-
-    var buildingSourceName = "buildingShadowSourceEast";
-    var buildingLayerName = "buildingShadowLayerEast";
-
-    map.addSource(buildingSourceName, {
-      type: "geojson",
-      data: {
-        type: "Feature",
-        geometry: {
-          type: "Polygon",
-          // These coordinates outline Maine.
-          coordinates: [hullPoints],
-        },
-      },
-    });
-
-    map.addLayer({
-      id: buildingLayerName,
-      type: "fill",
-      source: buildingSourceName, // reference the data source
-      layout: {},
-      paint: {
-        "fill-color": "#424359", // blue color fill
-        "fill-opacity": 0.2,
-      },
-    });
 
     //end building shadow code
 
-    map.addLayer(
-      new MapboxLayer({
-        id: "shadow",
-        type: PointCloudLayer,
-        data: pointCloudFile,
-        getPosition: (d) => [
-          d[1] - ((d[2] / tanAmp) * sinAz) / 84540.7,
-          d[0] - ((d[2] / tanAmp) * cosAz) / 111047.7,
-          d[2] * 0,
-        ], //approx degree to meter conversion from here: http://www.csgnetwork.com/degreelenllavcalc.html
-        getColor: (d) =>
-          pointColor([d[1], d[0], d[2]], hullPoints, tanAmp, sinAmp, cosAz), // [ d[2] , d[2], d[2], 255*(d[5]-d[4])-d[2] ],
-        sizeUnits: "feet",
-        pointSize: 4,
-        opacity: 0.1,
-        visible: true,
-      })
-    );
+    // map.addLayer(
+    //   new MapboxLayer({
+    //     id: "shadow",
+    //     type: PointCloudLayer,
+    //     data: pointCloudFile,
+    //     getPosition: (d) => [
+    //       d[1] - ((d[2] / tanAmp) * sinAz) / 84540.7,
+    //       d[0] - ((d[2] / tanAmp) * cosAz) / 111047.7,
+    //       d[2] * 0,
+    //     ], //approx degree to meter conversion from here: http://www.csgnetwork.com/degreelenllavcalc.html
+    //     getColor: (d) =>
+    //       pointColor([d[1], d[0], d[2]], hullPoints, tanAmp, sinAmp, cosAz), // [ d[2] , d[2], d[2], 255*(d[5]-d[4])-d[2] ],
+    //     sizeUnits: "feet",
+    //     pointSize: 4,
+    //     opacity: 0.1,
+    //     visible: true,
+    //   })
+    // );
 
     //htmlCountUpdate( () => { } );
   }
@@ -396,7 +411,11 @@ map.on("load", function () {
     fetch("./data/tile987187buildings.geojson")
       .then((response) => response.json())
       .then((data) => (buildings = data))
-      .then((json) => (building = buildingShadowUpdate(buildings)));
+      .then((json) => {
+        building = buildingShadowUpdate(buildings);
+        selectedBuildings.push(building);
+        console.log(selectedBuildings);
+      });
   });
 
   document.getElementById("dayslider").addEventListener("input", function (h) {
@@ -411,8 +430,8 @@ map.on("load", function () {
       .concat(date.toString().split("(").slice(0, 1));
     map.removeLayer("shadow");
 
-    map.removeLayer("buildingShadowLayerEast");
-    map.removeSource("buildingShadowSourceEast");
+    // map.removeLayer("buildingShadowLayerEast");
+    // map.removeSource("buildingShadowSourceEast");
 
     shadow(treeID, date);
 
@@ -432,8 +451,8 @@ map.on("load", function () {
       .concat(date.toString().split("(").slice(0, 1));
     map.removeLayer("shadow");
 
-    map.removeLayer("buildingShadowLayerEast");
-    map.removeSource("buildingShadowSourceEast");
+    // map.removeLayer("buildingShadowLayerEast");
+    // map.removeSource("buildingShadowSourceEast");
 
     shadow(treeID, date);
   });
