@@ -236,8 +236,6 @@ map.on("load", function () {
 
     //end building shadow code
 
-    console.log("hulls: ", hulls);
-
     //start update tree
     map.addLayer(
       new MapboxLayer({
@@ -315,8 +313,12 @@ map.on("load", function () {
   }
 
   map.on("click", "trees1", function (e) {
-    map.removeLayer("tree");
-    map.removeLayer("shadow");
+    if (map.getLayer("tree")) {
+      map.removeLayer("tree");
+    }
+    if (map.getLayer("shadow")) {
+      map.removeLayer("shadow");
+    }
 
     treeID = e.features[0].properties["tree_id"];
 
