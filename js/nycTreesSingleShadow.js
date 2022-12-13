@@ -19,7 +19,7 @@ var lon;
 var species;
 var date;
 var buildings;
-var hullPoints;
+var hulls = [];
 
 var sinAz;
 var cosAz;
@@ -173,6 +173,7 @@ map.on("load", function () {
     }
 
     var hullPoints = convexHull(buildingPointsGround);
+    hulls.push(hullPoints);
 
     // console.log(buildingSourceName, buildingLayerName);
 
@@ -222,56 +223,57 @@ map.on("load", function () {
     cosAmp = Math.cos(((amp - 90) * Math.PI) / 180);
     tanAmp = Math.tan((-amp * Math.PI) / 180);
 
-    //start update tree
-
     map.removeLayer("tree");
     shadedPoints = [];
     shadingPoints = [];
     otherPoints = [];
 
-    // map.addLayer(
-    //   new MapboxLayer({
-    //     id: "tree",
-    //     type: PointCloudLayer,
-    //     data: pointCloudFile,
-    //     getPosition: (d) => [d[1], d[0], d[2]],
-    //     getColor: (d) =>
-    //       pointColor([d[1], d[0], d[2]], hullPoints, tanAmp, sinAmp, cosAz),
-    //     sizeUnits: "feet",
-    //     pointSize: 3,
-    //     opacity: 0.8,
-    //     visible: true,
-    //   })
-    // );
-
-    //end update tree
-
     //add in building shadow code
-
+    hulls = [];
     for (var building of selectedBuildings) {
       getBuildingShadow(building);
     }
 
     //end building shadow code
 
-    // map.addLayer(
-    //   new MapboxLayer({
-    //     id: "shadow",
-    //     type: PointCloudLayer,
-    //     data: pointCloudFile,
-    //     getPosition: (d) => [
-    //       d[1] - ((d[2] / tanAmp) * sinAz) / 84540.7,
-    //       d[0] - ((d[2] / tanAmp) * cosAz) / 111047.7,
-    //       d[2] * 0,
-    //     ], //approx degree to meter conversion from here: http://www.csgnetwork.com/degreelenllavcalc.html
-    //     getColor: (d) =>
-    //       pointColor([d[1], d[0], d[2]], hullPoints, tanAmp, sinAmp, cosAz), // [ d[2] , d[2], d[2], 255*(d[5]-d[4])-d[2] ],
-    //     sizeUnits: "feet",
-    //     pointSize: 4,
-    //     opacity: 0.1,
-    //     visible: true,
-    //   })
-    // );
+    console.log("hulls: ", hulls);
+
+    //start update tree
+    map.addLayer(
+      new MapboxLayer({
+        id: "tree",
+        type: PointCloudLayer,
+        data: pointCloudFile,
+        getPosition: (d) => [d[1], d[0], d[2]],
+        getColor: (d) =>
+          pointColor([d[1], d[0], d[2]], hulls, tanAmp, sinAmp, cosAz),
+        sizeUnits: "feet",
+        pointSize: 3,
+        opacity: 0.8,
+        visible: true,
+      })
+    );
+
+    //end update tree
+
+    map.addLayer(
+      new MapboxLayer({
+        id: "shadow",
+        type: PointCloudLayer,
+        data: pointCloudFile,
+        getPosition: (d) => [
+          d[1] - ((d[2] / tanAmp) * sinAz) / 84540.7,
+          d[0] - ((d[2] / tanAmp) * cosAz) / 111047.7,
+          d[2] * 0,
+        ], //approx degree to meter conversion from here: http://www.csgnetwork.com/degreelenllavcalc.html
+        getColor: (d) =>
+          pointColor([d[1], d[0], d[2]], hulls, tanAmp, sinAmp, cosAz), // [ d[2] , d[2], d[2], 255*(d[5]-d[4])-d[2] ],
+        sizeUnits: "feet",
+        pointSize: 4,
+        opacity: 0.1,
+        visible: true,
+      })
+    );
 
     //htmlCountUpdate( () => { } );
   }
@@ -430,9 +432,6 @@ map.on("load", function () {
       .concat(date.toString().split("(").slice(0, 1));
     map.removeLayer("shadow");
 
-    // map.removeLayer("buildingShadowLayerEast");
-    // map.removeSource("buildingShadowSourceEast");
-
     shadow(treeID, date);
 
     stretchHoursBar();
@@ -450,9 +449,6 @@ map.on("load", function () {
       .concat("<br> @ ")
       .concat(date.toString().split("(").slice(0, 1));
     map.removeLayer("shadow");
-
-    // map.removeLayer("buildingShadowLayerEast");
-    // map.removeSource("buildingShadowSourceEast");
 
     shadow(treeID, date);
   });
@@ -532,9 +528,17 @@ function pointColor(point, vs, tanAmp, sinAmp, cosAz) {
 
   var xg = x - ((z / tanAmp) * sinAz) / 84540.7;
   var yg = y - ((z / tanAmp) * cosAz) / 111047.7;
+  var insideSky = false;
+  var insideGround = false;
 
-  var insideSky = inside([x, y], vs);
-  var insideGround = inside([xg, yg], vs);
+  for (var hull of vs) {
+    if (inside([x, y], hull)) {
+      insideSky = true;
+    }
+    if (inside([xg, yg], hull)) {
+      insideGround = true;
+    }
+  }
 
   if (insideGround && insideSky) {
     shadedPoints.push([x, y, z]);
