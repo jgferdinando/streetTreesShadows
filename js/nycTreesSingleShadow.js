@@ -35,16 +35,20 @@ var otherPoints = [];
 var building;
 var selectedBins = [];
 var selectedBuildings = [];
+var selectedTreeIds = [];
 var buildingFilter = ["in", "bin"];
 
 //
 
 //
 
-fetch("./data/bondGardenBuildingWest.geojson")
+// fetch("./data/bondGardenBuildingWest.geojson")
+//   .then((response) => response.json())
+//   .then((data) => (buildings = data))
+//   .then((json) => (building = buildings.features[0]));
+fetch("./data/tile987187buildings.geojson")
   .then((response) => response.json())
-  .then((data) => (buildings = data))
-  .then((json) => (building = buildings.features[0]));
+  .then((data) => (buildings = data));
 
 ////////////
 
@@ -204,10 +208,12 @@ map.on("load", function () {
   var treeID;
 
   function shadow(treeID, date) {
-    var pointCloudFile = "data/pointCloudJSONs/";
-    var pointCloudFile = pointCloudFile.concat(treeID);
-    var pointCloudFile = pointCloudFile.concat(".json");
-    var shadow = "shadow".concat(treeID);
+    selectedTreeIds.push(treeID);
+    // console.log(selectedTreeIds);
+
+    // var pointCloudFile = "data/pointCloudJSONs/";
+    // var pointCloudFile = pointCloudFile.concat(treeID);
+    // var pointCloudFile = pointCloudFile.concat(".json");
 
     var sunPosition = SunCalc.getPosition(date, lat, lon);
     var az = (sunPosition["azimuth"] * 180) / Math.PI;
@@ -223,7 +229,7 @@ map.on("load", function () {
     cosAmp = Math.cos(((amp - 90) * Math.PI) / 180);
     tanAmp = Math.tan((-amp * Math.PI) / 180);
 
-    map.removeLayer("tree");
+    // map.removeLayer("tree");
     shadedPoints = [];
     shadingPoints = [];
     otherPoints = [];
@@ -237,41 +243,54 @@ map.on("load", function () {
     //end building shadow code
 
     //start update tree
-    map.addLayer(
-      new MapboxLayer({
-        id: "tree",
-        type: PointCloudLayer,
-        data: pointCloudFile,
-        getPosition: (d) => [d[1], d[0], d[2]],
-        getColor: (d) =>
-          pointColor([d[1], d[0], d[2]], hulls, tanAmp, sinAmp, cosAz),
-        sizeUnits: "feet",
-        pointSize: 3,
-        opacity: 0.8,
-        visible: true,
-      })
-    );
+    for (var tree_id of selectedTreeIds) {
+      var pointCloudId = `tree${tree_id}`;
+      var pointCloudFile = `data/pointCloudJSONs/${tree_id}.json`;
+      // console.log(pointCloudFile);
+      var shadowId = `shadow${tree_id}`;
 
-    //end update tree
+      if (map.getLayer(pointCloudId)) {
+        map.removeLayer(pointCloudId);
+      }
+      if (map.getLayer(shadowId)) {
+        map.removeLayer(shadowId);
+      }
+      map.addLayer(
+        new MapboxLayer({
+          id: pointCloudId,
+          type: PointCloudLayer,
+          data: pointCloudFile,
+          getPosition: (d) => [d[1], d[0], d[2]],
+          getColor: (d) =>
+            pointColor([d[1], d[0], d[2]], hulls, tanAmp, sinAmp, cosAz),
+          sizeUnits: "feet",
+          pointSize: 3,
+          opacity: 0.8,
+          visible: true,
+        })
+      );
 
-    map.addLayer(
-      new MapboxLayer({
-        id: "shadow",
-        type: PointCloudLayer,
-        data: pointCloudFile,
-        getPosition: (d) => [
-          d[1] - ((d[2] / tanAmp) * sinAz) / 84540.7,
-          d[0] - ((d[2] / tanAmp) * cosAz) / 111047.7,
-          d[2] * 0,
-        ], //approx degree to meter conversion from here: http://www.csgnetwork.com/degreelenllavcalc.html
-        getColor: (d) =>
-          pointColor([d[1], d[0], d[2]], hulls, tanAmp, sinAmp, cosAz), // [ d[2] , d[2], d[2], 255*(d[5]-d[4])-d[2] ],
-        sizeUnits: "feet",
-        pointSize: 4,
-        opacity: 0.1,
-        visible: true,
-      })
-    );
+      // //end update tree
+
+      map.addLayer(
+        new MapboxLayer({
+          id: shadowId,
+          type: PointCloudLayer,
+          data: pointCloudFile,
+          getPosition: (d) => [
+            d[1] - ((d[2] / tanAmp) * sinAz) / 84540.7,
+            d[0] - ((d[2] / tanAmp) * cosAz) / 111047.7,
+            d[2] * 0,
+          ], //approx degree to meter conversion from here: http://www.csgnetwork.com/degreelenllavcalc.html
+          getColor: (d) =>
+            pointColor([d[1], d[0], d[2]], hulls, tanAmp, sinAmp, cosAz), // [ d[2] , d[2], d[2], 255*(d[5]-d[4])-d[2] ],
+          sizeUnits: "feet",
+          pointSize: 4,
+          opacity: 0.1,
+          visible: true,
+        })
+      );
+    }
 
     //htmlCountUpdate( () => { } );
   }
@@ -327,13 +346,15 @@ map.on("load", function () {
     species = e.features[0].properties["spc_common"];
     console.log(treeID, species);
 
-    var pointCloudFile = "data/pointCloudJSONs/";
-    var pointCloudFile = pointCloudFile.concat(treeID);
-    var pointCloudFile = pointCloudFile.concat(".json");
+    // var pointCloudFile = "data/pointCloudJSONs/";
+    // var pointCloudFile = pointCloudFile.concat(treeID);
+    // var pointCloudFile = pointCloudFile.concat(".json");
+    var pointCloudId = `tree${treeID}`;
+    var pointCloudFile = `data/pointCloudJSONs/${treeID}.json`;
 
     map.addLayer(
       new MapboxLayer({
-        id: "tree",
+        id: pointCloudId,
         type: PointCloudLayer,
         data: pointCloudFile,
         getPosition: (d) => [d[1], d[0], d[2]],
@@ -405,21 +426,23 @@ map.on("load", function () {
 
       for (let i = 0; i < buildings.features.length; i++) {
         if (buildings.features[i].properties.bin == bin) {
-          building = buildings.features[i];
+          var building = buildings.features[i];
+          selectedBuildings.push(building);
         } else {
         }
       }
-      return building;
-    }
 
-    fetch("./data/tile987187buildings.geojson")
-      .then((response) => response.json())
-      .then((data) => (buildings = data))
-      .then((json) => {
-        building = buildingShadowUpdate(buildings);
-        selectedBuildings.push(building);
-        console.log(selectedBuildings);
-      });
+      // return building;
+    }
+    buildingShadowUpdate(buildings);
+    // fetch("./data/tile987187buildings.geojson")
+    //   .then((response) => response.json())
+    //   .then((data) => (buildings = data))
+    //   .then((json) => {
+    //     building = buildingShadowUpdate(buildings);
+    //     selectedBuildings.push(building);
+    //     console.log(selectedBuildings);
+    //   });
   });
 
   document.getElementById("dayslider").addEventListener("input", function (h) {
@@ -432,7 +455,7 @@ map.on("load", function () {
     document.getElementById("common").innerHTML = species
       .concat("<br> @ ")
       .concat(date.toString().split("(").slice(0, 1));
-    map.removeLayer("shadow");
+    // map.removeLayer("shadow");
 
     shadow(treeID, date);
 
@@ -450,7 +473,7 @@ map.on("load", function () {
     document.getElementById("common").innerHTML = species
       .concat("<br> @ ")
       .concat(date.toString().split("(").slice(0, 1));
-    map.removeLayer("shadow");
+    // map.removeLayer("shadow");
 
     shadow(treeID, date);
   });
