@@ -175,11 +175,8 @@ map.on("load", function () {
       ];
       buildingPointsGround.push(buildingPointGround);
     }
-
-    var hullPoints = convexHull(buildingPointsGround);
+    var hullPoints = makeHull(buildingPointsGround);
     hulls.push(hullPoints);
-
-    // console.log(buildingSourceName, buildingLayerName);
 
     map.addSource(buildingSourceName, {
       type: "geojson",
@@ -209,11 +206,6 @@ map.on("load", function () {
 
   function shadow(treeID, date) {
     selectedTreeIds.push(treeID);
-    // console.log(selectedTreeIds);
-
-    // var pointCloudFile = "data/pointCloudJSONs/";
-    // var pointCloudFile = pointCloudFile.concat(treeID);
-    // var pointCloudFile = pointCloudFile.concat(".json");
 
     var sunPosition = SunCalc.getPosition(date, lat, lon);
     var az = (sunPosition["azimuth"] * 180) / Math.PI;
@@ -478,6 +470,67 @@ map.on("load", function () {
     shadow(treeID, date);
   });
 });
+
+// alternative convexHull function from https://www.nayuki.io/page/convex-hull-algorithm
+function makeHull(points) {
+  let newPoints = points.slice();
+  newPoints.sort();
+  return makeHullPresorted(newPoints.reverse());
+}
+function comparator(a, b) {
+  if (a.x < b.x) return -1;
+  else if (a.x > b.x) return +1;
+  else if (a.y < b.y) return -1;
+  else if (a.y > b.y) return +1;
+  else return 0;
+}
+
+function makeHullPresorted(points) {
+  if (points.length <= 1) return points.slice();
+
+  // Andrew's monotone chain algorithm. Positive y coordinates correspond to "up"
+  // as per the mathematical convention, instead of "down" as per the computer
+  // graphics convention. This doesn't affect the correctness of the result.
+
+  let upperHull = [];
+  for (let i = 0; i < points.length; i++) {
+    const p = points[i];
+    const [px, py] = p;
+    while (upperHull.length >= 2) {
+      const [qx, qy] = upperHull[upperHull.length - 1];
+      const [rx, ry] = upperHull[upperHull.length - 2];
+      if ((qx - rx) * (py - ry) >= (qy - ry) * (px - rx)) {
+        upperHull.pop();
+      } else break;
+    }
+    upperHull.push(p);
+  }
+  upperHull.pop();
+
+  let lowerHull = [];
+  for (let i = points.length - 1; i >= 0; i--) {
+    const p = points[i];
+    const [px, py] = p;
+    while (lowerHull.length >= 2) {
+      const [qx, qy] = lowerHull[lowerHull.length - 1];
+      const [rx, ry] = lowerHull[lowerHull.length - 2];
+      if ((qx - rx) * (py - ry) >= (qy - ry) * (px - rx)) {
+        lowerHull.pop();
+      } else break;
+    }
+    lowerHull.push(p);
+  }
+  lowerHull.pop();
+
+  if (
+    upperHull.length == 1 &&
+    lowerHull.length == 1 &&
+    upperHull[0].x == lowerHull[0].x &&
+    upperHull[0].y == lowerHull[0].y
+  )
+    return upperHull;
+  else return upperHull.concat(lowerHull);
+}
 
 //big thanks to: http://www.bitbanging.space/posts/convex-hull-algorithms-for-a-set-of-points
 function polarAngle(a, b, c) {
