@@ -204,7 +204,7 @@ map.on("load", function () {
 
   var treeID;
 
-  function shadow(treeID, date) {
+  function shadow(treeID, date, callback) {
     selectedTreeIds.push(treeID);
 
     var sunPosition = SunCalc.getPosition(date, lat, lon);
@@ -283,8 +283,9 @@ map.on("load", function () {
         })
       );
     }
-
-    //htmlCountUpdate( () => { } );
+    setTimeout(() => {
+      callback();
+    }, 500);
   }
 
   function stretchHoursBar() {
@@ -402,14 +403,23 @@ map.on("load", function () {
     document.getElementById("density").innerHTML =
       e.features[0].properties["density"];
 
-    shadow(treeID, date);
+    // let shadowPromise = new Promise(function (myResolve, myReject) {
+    //   shadow(treeID, date);
+    //   if (map.getLayer(`shadow${treeID}`)) {
+    //     myResolve();
+    //   } else {
+    //     myReject();
+    //   }
+    // });
+    // shadowPromise.then(htmlCountUpdate);
+    shadow(treeID, date, htmlCountUpdate);
     stretchHoursBar();
   });
 
   map.on("click", "buildingfootprints", function (e) {
     var bin = e.features[0].properties["bin"];
     selectedBins.push(bin);
-    console.log(selectedBins);
+    // console.log(selectedBins);
 
     map.setFilter("buildingExtruded", ["in", "bin", ...selectedBins]);
 
@@ -427,14 +437,6 @@ map.on("load", function () {
       // return building;
     }
     buildingShadowUpdate(buildings);
-    // fetch("./data/tile987187buildings.geojson")
-    //   .then((response) => response.json())
-    //   .then((data) => (buildings = data))
-    //   .then((json) => {
-    //     building = buildingShadowUpdate(buildings);
-    //     selectedBuildings.push(building);
-    //     console.log(selectedBuildings);
-    //   });
   });
 
   document.getElementById("dayslider").addEventListener("input", function (h) {
@@ -447,9 +449,8 @@ map.on("load", function () {
     document.getElementById("common").innerHTML = species
       .concat("<br> @ ")
       .concat(date.toString().split("(").slice(0, 1));
-    // map.removeLayer("shadow");
 
-    shadow(treeID, date);
+    shadow(treeID, date, htmlCountUpdate);
 
     stretchHoursBar();
   });
@@ -465,9 +466,8 @@ map.on("load", function () {
     document.getElementById("common").innerHTML = species
       .concat("<br> @ ")
       .concat(date.toString().split("(").slice(0, 1));
-    // map.removeLayer("shadow");
 
-    shadow(treeID, date);
+    shadow(treeID, date, htmlCountUpdate);
   });
 });
 
@@ -630,7 +630,7 @@ function pointColor(point, vs, tanAmp, sinAmp, cosAz) {
   }
 }
 
-function htmlCountUpdate(_callback) {
+function htmlCountUpdate() {
   console.log(shadedPoints.length);
   console.log(shadingPoints.length);
   console.log(otherPoints.length);
@@ -641,6 +641,4 @@ function htmlCountUpdate(_callback) {
     shadingPoints.length.toString();
   document.getElementById("shadingground").innerHTML =
     otherPoints.length.toString();
-
-  _callback();
 }
