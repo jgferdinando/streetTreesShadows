@@ -606,22 +606,30 @@ function pointColor(point, vs, tanAmp, sinAmp, cosAz) {
 
   var xg = x - ((z / tanAmp) * sinAz) / 84540.7;
   var yg = y - ((z / tanAmp) * cosAz) / 111047.7;
-  var insideSky = false;
-  var insideGround = false;
 
+  var isShading = false;
+  var isShaded = false;
   for (var hull of vs) {
+    var insideSky = false;
+    var insideGround = false;
     if (inside([x, y], hull)) {
       insideSky = true;
     }
     if (inside([xg, yg], hull)) {
       insideGround = true;
     }
+
+    if (insideGround && insideSky == false) {
+      isShading = true;
+    } else if (insideGround && insideSky) {
+      isShaded = true;
+    }
   }
 
-  if (insideGround && insideSky) {
+  if (isShaded) {
     shadedPoints.push([x, y, z]);
     return [25 + z * 5, 50 + z * 8, 100 + z * 7];
-  } else if (insideGround && insideSky == false) {
+  } else if (isShading) {
     shadingPoints.push([x, y, z]);
     return [255, 50 + z * 10, 75];
   } else {
@@ -631,9 +639,9 @@ function pointColor(point, vs, tanAmp, sinAmp, cosAz) {
 }
 
 function htmlCountUpdate() {
-  console.log(shadedPoints.length);
-  console.log(shadingPoints.length);
-  console.log(otherPoints.length);
+  // console.log(shadedPoints.length);
+  // console.log(shadingPoints.length);
+  // console.log(otherPoints.length);
 
   document.getElementById("inshadow").innerHTML =
     shadedPoints.length.toString();
