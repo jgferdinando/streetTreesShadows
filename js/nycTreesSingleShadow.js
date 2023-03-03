@@ -16,7 +16,7 @@ var map = new mapboxgl.Map({
 
 var lat;
 var lon;
-var species;
+var species = "Common Name";
 var date;
 var buildings;
 var hulls = [];
@@ -202,11 +202,7 @@ map.on("load", function () {
     });
   }
 
-  var treeID;
-
-  function shadow(treeID, date, callback) {
-    selectedTreeIds.push(treeID);
-
+  function shadow(date, callback) {
     var sunPosition = SunCalc.getPosition(date, lat, lon);
     var az = (sunPosition["azimuth"] * 180) / Math.PI;
     var amp = (sunPosition["altitude"] * 180) / Math.PI;
@@ -332,12 +328,10 @@ map.on("load", function () {
       map.removeLayer("shadow");
     }
 
-    treeID = e.features[0].properties["tree_id"];
+    var treeID = e.features[0].properties["tree_id"];
 
     lat = e.features[0].properties["Latitude"];
     lon = e.features[0].properties["longitude"];
-    species = e.features[0].properties["spc_common"];
-    console.log(treeID, species);
 
     // var pointCloudFile = "data/pointCloudJSONs/";
     // var pointCloudFile = pointCloudFile.concat(treeID);
@@ -372,6 +366,14 @@ map.on("load", function () {
     var offset = date.getTimezoneOffset();
     date.setTime(date.getTime() + hour * 60 * 60 * 1000 + offset * 60 * 1000);
 
+    updateUI(e);
+    selectedTreeIds.push(treeID);
+    shadow(date, htmlCountUpdate);
+    stretchHoursBar();
+  });
+
+  function updateUI(e) {
+    species = e.features[0].properties["spc_common"];
     document.getElementById("common").innerHTML = species
       .concat("<br> @ ")
       .concat(date.toString().split("(").slice(0, 1));
@@ -379,7 +381,6 @@ map.on("load", function () {
       species,
       ".html"
     );
-    document.getElementById("common").setAttribute("href", link);
     document.getElementById("common").setAttribute("href", link);
     document.getElementById("latin").innerHTML =
       e.features[0].properties["spc_latin"];
@@ -402,19 +403,7 @@ map.on("load", function () {
       e.features[0].properties["zrange"];
     document.getElementById("density").innerHTML =
       e.features[0].properties["density"];
-
-    // let shadowPromise = new Promise(function (myResolve, myReject) {
-    //   shadow(treeID, date);
-    //   if (map.getLayer(`shadow${treeID}`)) {
-    //     myResolve();
-    //   } else {
-    //     myReject();
-    //   }
-    // });
-    // shadowPromise.then(htmlCountUpdate);
-    shadow(treeID, date, htmlCountUpdate);
-    stretchHoursBar();
-  });
+  }
 
   map.on("click", "buildingfootprints", function (e) {
     var bin = e.features[0].properties["bin"];
@@ -450,7 +439,7 @@ map.on("load", function () {
       .concat("<br> @ ")
       .concat(date.toString().split("(").slice(0, 1));
 
-    shadow(treeID, date, htmlCountUpdate);
+    shadow(date, htmlCountUpdate);
 
     stretchHoursBar();
   });
@@ -467,7 +456,7 @@ map.on("load", function () {
       .concat("<br> @ ")
       .concat(date.toString().split("(").slice(0, 1));
 
-    shadow(treeID, date, htmlCountUpdate);
+    shadow(date, htmlCountUpdate);
   });
 });
 
@@ -650,3 +639,62 @@ function htmlCountUpdate() {
   document.getElementById("shadingground").innerHTML =
     otherPoints.length.toString();
 }
+
+const refreshButton = document.getElementById("refress-button");
+
+function refreshUIContent() {
+  document.getElementById("common").innerHTML = "Common Name";
+  document.getElementById("latin").innerHTML = "Latin Name";
+  document.getElementById("address").innerHTML = "";
+  document.getElementById("status").innerHTML = "";
+  document.getElementById("health").innerHTML = "";
+  document.getElementById("trunk").innerHTML = "";
+  document.getElementById("canopy").innerHTML = "";
+  document.getElementById("height").innerHTML = "";
+  document.getElementById("density").innerHTML = "";
+  species = "Common Name";
+  shadedPoints = [];
+  shadingPoints = [];
+  otherPoints = [];
+  htmlCountUpdate();
+}
+
+function onRefresh() {
+  console.log("test");
+  // Remove all trees and tree shadows
+  for (var tree_id of selectedTreeIds) {
+    var pointCloudId = `tree${tree_id}`;
+    var shadowId = `shadow${tree_id}`;
+
+    if (map.getLayer(pointCloudId)) {
+      map.removeLayer(pointCloudId);
+    }
+    if (map.getLayer(shadowId)) {
+      map.removeLayer(shadowId);
+    }
+  }
+  selectedTreeIds = [];
+
+  // remove all buildings and building shadows
+  for (var building of selectedBuildings) {
+    var buildingBin = building.properties.bin;
+    var buildingSourceName = `building${buildingBin}ShadowSourceEast`;
+    var buildingLayerName = `building${buildingBin}ShadowLayerEast`;
+
+    if (map.getLayer(buildingLayerName)) {
+      map.removeLayer(buildingLayerName);
+    }
+
+    if (map.getSource(buildingSourceName)) {
+      map.removeSource(buildingSourceName);
+    }
+  }
+  selectedBuildings = [];
+  selectedBins = [];
+  map.setFilter("buildingExtruded", ["in", "bin", ...selectedBins]);
+
+  // refresh UI content
+  refreshUIContent();
+}
+// Add a click event listener to the button
+refreshButton.addEventListener("click", onRefresh);
