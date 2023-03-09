@@ -1,7 +1,7 @@
 .map-overlay {
   font: 12px/12px "Helvetica Neue", Arial, Helvetica, sans-serif;
   position: absolute;
-  opacity: 0.7;
+  /* opacity: 0.7; */
   top: 73%;
   left: 2%;
   right: 2%;
@@ -15,20 +15,38 @@
   margin-bottom: 0%;
 }
 
-.map-overlay-button {
-  display: table;
+.map-overlay-menu {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3rem;
   overflow: hidden;
   position: absolute;
   top: 10%;
-  right: 5%;
-  width: 120px;
-  height: 40px;
-  background-color: rgba(200, 200, 200, 0.5);
+  right: 2%;
+  background-color: rgba(230, 230, 230, 0.8);
   color: black;
-  border: 1cap;
+  border: solid #c0c0c0;
+
+  border-radius: 30px;
+}
+
+.map-overlay-menu .button {
+  flex: 1;
+  text-align: center;
+  padding: 20px;
+  margin: 20px;
+  border: solid #c0c0c0;
   cursor: pointer;
-  opacity: 0.7;
-  border-radius: 10%;
+  cursor: pointer;
+  border-radius: 30px;
+}
+
+.map-overlay-menu #grey-button[active="true"] {
+  background-color: rgba(190, 190, 190, 0.8);
+}
+.map-overlay-menu #color-button[active="true"] {
+  background-color: rgba(190, 190, 190, 0.8);
 }
 
 .map-overlay input {

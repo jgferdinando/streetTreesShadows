@@ -640,8 +640,6 @@ function htmlCountUpdate() {
     otherPoints.length.toString();
 }
 
-const refreshButton = document.getElementById("refress-button");
-
 function refreshUIContent() {
   document.getElementById("common").innerHTML = "Common Name";
   document.getElementById("latin").innerHTML = "Latin Name";
@@ -660,7 +658,6 @@ function refreshUIContent() {
 }
 
 function onRefresh() {
-  console.log("test");
   // Remove all trees and tree shadows
   for (var tree_id of selectedTreeIds) {
     var pointCloudId = `tree${tree_id}`;
@@ -696,5 +693,72 @@ function onRefresh() {
   // refresh UI content
   refreshUIContent();
 }
+
+function onGreyShadowColor() {
+  for (var tree_id of selectedTreeIds) {
+    var pointCloudFile = `data/pointCloudJSONs/${tree_id}.json`;
+    var shadowId = `shadow${tree_id}`;
+    if (map.getLayer(shadowId)) {
+      map.removeLayer(shadowId);
+    }
+    map.addLayer(
+      new MapboxLayer({
+        id: shadowId,
+        type: PointCloudLayer,
+        data: pointCloudFile,
+        getPosition: (d) => [
+          d[1] - ((d[2] / tanAmp) * sinAz) / 84540.7,
+          d[0] - ((d[2] / tanAmp) * cosAz) / 111047.7,
+          d[2] * 0,
+        ], //approx degree to meter conversion from here: http://www.csgnetwork.com/degreelenllavcalc.html
+        getColor: (d) => [169, 169, 169], // [ d[2] , d[2], d[2], 255*(d[5]-d[4])-d[2] ],
+        sizeUnits: "feet",
+        pointSize: 4,
+        opacity: 0.1,
+        visible: true,
+      })
+    );
+  }
+  greyShadowButton.setAttribute("active", "true");
+  colorShadowButton.setAttribute("active", "false");
+}
+
+function onColorShadowColor() {
+  for (var tree_id of selectedTreeIds) {
+    var pointCloudFile = `data/pointCloudJSONs/${tree_id}.json`;
+    var shadowId = `shadow${tree_id}`;
+    if (map.getLayer(shadowId)) {
+      map.removeLayer(shadowId);
+    }
+    map.addLayer(
+      new MapboxLayer({
+        id: shadowId,
+        type: PointCloudLayer,
+        data: pointCloudFile,
+        getPosition: (d) => [
+          d[1] - ((d[2] / tanAmp) * sinAz) / 84540.7,
+          d[0] - ((d[2] / tanAmp) * cosAz) / 111047.7,
+          d[2] * 0,
+        ], //approx degree to meter conversion from here: http://www.csgnetwork.com/degreelenllavcalc.html
+        getColor: (d) =>
+          pointColor([d[1], d[0], d[2]], hulls, tanAmp, sinAmp, cosAz), // [ d[2] , d[2], d[2], 255*(d[5]-d[4])-d[2] ],
+        sizeUnits: "feet",
+        pointSize: 4,
+        opacity: 0.1,
+        visible: true,
+      })
+    );
+  }
+  colorShadowButton.setAttribute("active", "true");
+  greyShadowButton.setAttribute("active", "false");
+}
+
 // Add a click event listener to the button
+const refreshButton = document.getElementById("refress-button");
 refreshButton.addEventListener("click", onRefresh);
+
+const greyShadowButton = document.getElementById("grey-button");
+greyShadowButton.addEventListener("click", onGreyShadowColor);
+
+const colorShadowButton = document.getElementById("color-button");
+colorShadowButton.addEventListener("click", onColorShadowColor);
