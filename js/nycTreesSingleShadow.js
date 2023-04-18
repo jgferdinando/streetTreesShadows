@@ -757,8 +757,16 @@ function onColorShadowColor() {
 const refreshButton = document.getElementById("refress-button");
 refreshButton.addEventListener("click", onRefresh);
 
+// toggle tree shadow color between grey and color
 const greyShadowButton = document.getElementById("grey-button");
 greyShadowButton.addEventListener("click", onGreyShadowColor);
 
 const colorShadowButton = document.getElementById("color-button");
 colorShadowButton.addEventListener("click", onColorShadowColor);
+
+// toggle tree color between grey and color
+
+document.querySelector(".burger-menu").addEventListener("click", function () {
+  this.classList.toggle("open");
+  document.querySelector(".menu-items").classList.toggle("open");
+});

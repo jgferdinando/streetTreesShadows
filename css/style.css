@@ -15,21 +15,85 @@
   margin-bottom: 0%;
 }
 
+/* burger menu styles */
 .map-overlay-menu {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 3rem;
-  overflow: hidden;
+  overflow: visible; /* Add this line */
   position: absolute;
   top: 10%;
   right: 2%;
-  background-color: rgba(230, 230, 230, 0.8);
+  /* background-color: rgba(230, 230, 230, 0.8);
   color: black;
   border: solid #c0c0c0;
-
-  border-radius: 30px;
+  border-radius: 30px; */
 }
+
+.burger-menu {
+  display: inline-block;
+  cursor: pointer;
+  position: absolute;
+  top: 10%;
+  right: 2%;
+  z-index: 2;
+}
+
+.burger-menu span {
+  display: block;
+  width: 30px;
+  height: 3px;
+  margin-bottom: 5px;
+  background-color: #000; /* Change the color to black */
+  transition: all 0.3s ease;
+}
+
+.burger-menu.open span:nth-child(1) {
+  transform: translateY(8px) rotate(45deg);
+}
+
+.burger-menu.open span:nth-child(2) {
+  opacity: 0;
+}
+
+.burger-menu.open span:nth-child(3) {
+  transform: translateY(-8px) rotate(-45deg);
+}
+
+.menu-items {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background-color: rgba(240, 240, 240, 0.8);
+  padding: 15px;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.16), 0 3px 6px rgba(0, 0, 0, 0.23);
+  transition: all 0.3s ease;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 100;
+  margin-top: 3rem;
+  border-radius: 10px;
+}
+
+.menu-items h3 {
+  font-size: 16px;
+  font-weight: bold;
+  text-align: center;
+  margin: 5px 0;
+}
+
+.menu-items hr {
+  margin: 10px 0;
+  border: 1px solid lightgrey;
+}
+
+.menu-items.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* end of burger menu styles */
 
 .map-overlay-menu .button {
   flex: 1;
@@ -40,6 +104,9 @@
   cursor: pointer;
   cursor: pointer;
   border-radius: 30px;
+}
+.map-overlay-menu .button:hover {
+  background-color: rgba(190, 190, 190, 0.8);
 }
 
 .map-overlay-menu #grey-button[active="true"] {
