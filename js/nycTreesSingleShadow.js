@@ -38,19 +38,12 @@ var selectedBuildings = [];
 var selectedTreeIds = [];
 var buildingFilter = ["in", "bin"];
 
-//
+var treeColor = "color";
+var shadowColor = "color";
 
-//
-
-// fetch("./data/bondGardenBuildingWest.geojson")
-//   .then((response) => response.json())
-//   .then((data) => (buildings = data))
-//   .then((json) => (building = buildings.features[0]));
 fetch("./data/tile987187buildings.geojson")
   .then((response) => response.json())
   .then((data) => (buildings = data));
-
-////////////
 
 map.on("load", function () {
   map.removeLayer("building");
@@ -148,178 +141,6 @@ map.on("load", function () {
     map.getCanvas().style.cursor = "";
   });
 
-  //
-  function getBuildingShadow(building) {
-    var buildingHeight = building.properties.heightroof;
-    var buildingPoints = building.geometry.coordinates[0][0];
-    var buildingBin = building.properties.bin;
-    var buildingPointsGround = [];
-    var buildingSourceName = `building${buildingBin}ShadowSourceEast`;
-    var buildingLayerName = `building${buildingBin}ShadowLayerEast`;
-
-    if (map.getLayer(buildingLayerName)) {
-      map.removeLayer(buildingLayerName);
-    }
-
-    if (map.getSource(buildingSourceName)) {
-      map.removeSource(buildingSourceName);
-    }
-    for (let i = 0; i < buildingPoints.length; i++) {
-      buildingPointsGround.push(buildingPoints[i]);
-      var x = buildingPoints[i][0];
-      var y = buildingPoints[i][1];
-      var z = buildingHeight / 3.28;
-      var buildingPointGround = [
-        x - ((z / tanAmp) * sinAz) / 84540.7,
-        y - ((z / tanAmp) * cosAz) / 111047.7,
-      ];
-      buildingPointsGround.push(buildingPointGround);
-    }
-    var hullPoints = makeHull(buildingPointsGround);
-    hulls.push(hullPoints);
-
-    map.addSource(buildingSourceName, {
-      type: "geojson",
-      data: {
-        type: "Feature",
-        geometry: {
-          type: "Polygon",
-          // These coordinates outline Maine.
-          coordinates: [hullPoints],
-        },
-      },
-    });
-
-    map.addLayer({
-      id: buildingLayerName,
-      type: "fill",
-      source: buildingSourceName, // reference the data source
-      layout: {},
-      paint: {
-        "fill-color": "#424359", // blue color fill
-        "fill-opacity": 0.2,
-      },
-    });
-  }
-
-  function shadow(date, callback) {
-    var sunPosition = SunCalc.getPosition(date, lat, lon);
-    var az = (sunPosition["azimuth"] * 180) / Math.PI;
-    var amp = (sunPosition["altitude"] * 180) / Math.PI;
-
-    var az = parseFloat(az);
-    var amp = parseFloat(amp);
-
-    sinAz = Math.sin((az * Math.PI) / 180);
-    cosAz = Math.cos((az * Math.PI) / 180);
-    tanAz = Math.tan((az * Math.PI) / 180);
-    sinAmp = Math.sin(((amp - 90) * Math.PI) / 180);
-    cosAmp = Math.cos(((amp - 90) * Math.PI) / 180);
-    tanAmp = Math.tan((-amp * Math.PI) / 180);
-
-    // map.removeLayer("tree");
-    shadedPoints = [];
-    shadingPoints = [];
-    otherPoints = [];
-
-    //add in building shadow code
-    hulls = [];
-    for (var building of selectedBuildings) {
-      getBuildingShadow(building);
-    }
-
-    //end building shadow code
-
-    //start update tree
-    for (var tree_id of selectedTreeIds) {
-      var pointCloudId = `tree${tree_id}`;
-      var pointCloudFile = `data/pointCloudJSONs/${tree_id}.json`;
-      // console.log(pointCloudFile);
-      var shadowId = `shadow${tree_id}`;
-
-      if (map.getLayer(pointCloudId)) {
-        map.removeLayer(pointCloudId);
-      }
-      if (map.getLayer(shadowId)) {
-        map.removeLayer(shadowId);
-      }
-      map.addLayer(
-        new MapboxLayer({
-          id: pointCloudId,
-          type: PointCloudLayer,
-          data: pointCloudFile,
-          getPosition: (d) => [d[1], d[0], d[2]],
-          getColor: (d) =>
-            pointColor([d[1], d[0], d[2]], hulls, tanAmp, sinAmp, cosAz),
-          sizeUnits: "feet",
-          pointSize: 3,
-          opacity: 0.8,
-          visible: true,
-        })
-      );
-
-      // //end update tree
-
-      map.addLayer(
-        new MapboxLayer({
-          id: shadowId,
-          type: PointCloudLayer,
-          data: pointCloudFile,
-          getPosition: (d) => [
-            d[1] - ((d[2] / tanAmp) * sinAz) / 84540.7,
-            d[0] - ((d[2] / tanAmp) * cosAz) / 111047.7,
-            d[2] * 0,
-          ], //approx degree to meter conversion from here: http://www.csgnetwork.com/degreelenllavcalc.html
-          getColor: (d) =>
-            pointColor([d[1], d[0], d[2]], hulls, tanAmp, sinAmp, cosAz), // [ d[2] , d[2], d[2], 255*(d[5]-d[4])-d[2] ],
-          sizeUnits: "feet",
-          pointSize: 4,
-          opacity: 0.1,
-          visible: true,
-        })
-      );
-    }
-    setTimeout(() => {
-      callback();
-    }, 500);
-  }
-
-  function stretchHoursBar() {
-    var day = parseFloat(document.getElementById("dayslider").value);
-    var hour = parseFloat(document.getElementById("hourslider").value);
-
-    var date = new Date("2022-01-01 00:00");
-    date.setDate(date.getDate() + day);
-    date.setTime(date.getTime() + hour * 60 * 60 * 1000);
-    var offset = date.getTimezoneOffset();
-
-    var dist = 183 - Math.abs(183 - day);
-    var adjusted = (dist * 114) / 183;
-
-    var times = SunCalc.getTimes(date, 40.7, -70.6);
-    var min =
-      times.sunrise.getHours() +
-      times.sunrise.getMinutes() / 60.0 -
-      offset / 60 +
-      0.5;
-    var max =
-      times.sunset.getHours() +
-      times.sunset.getMinutes() / 60.0 -
-      offset / 60 -
-      0.5;
-
-    var width = (max - min) * 4;
-    var buffer = (100 - width) / 2;
-    document.getElementById("hourslider").min = min;
-    document.getElementById("hourslider").max = max;
-    document.getElementById("hourslider").style.width = width
-      .toString()
-      .concat("%");
-    document.getElementById("hourslider").style.marginLeft = buffer
-      .toString()
-      .concat("%");
-  }
-
   map.on("click", "trees1", function (e) {
     if (map.getLayer("tree")) {
       map.removeLayer("tree");
@@ -345,12 +166,15 @@ map.on("load", function () {
         type: PointCloudLayer,
         data: pointCloudFile,
         getPosition: (d) => [d[1], d[0], d[2]],
-        getColor: (d) => [
-          d[3] * 255,
-          d[3] * 127 + d[3] * 127 * (d[5] - d[4] + 1),
-          d[3] * 255,
-          255 * (d[5] - d[4]),
-        ],
+        getColor: (d) =>
+          pointColor(
+            [d[1], d[0], d[2]],
+            hulls,
+            tanAmp,
+            sinAmp,
+            cosAz,
+            treeColor
+          ),
         sizeUnits: "feet",
         pointSize: 3,
         opacity: 0.8,
@@ -459,6 +283,192 @@ map.on("load", function () {
     shadow(date, htmlCountUpdate);
   });
 });
+
+// shadow update utils
+function getBuildingShadow(building) {
+  var buildingHeight = building.properties.heightroof;
+  var buildingPoints = building.geometry.coordinates[0][0];
+  var buildingBin = building.properties.bin;
+  var buildingPointsGround = [];
+  var buildingSourceName = `building${buildingBin}ShadowSourceEast`;
+  var buildingLayerName = `building${buildingBin}ShadowLayerEast`;
+
+  if (map.getLayer(buildingLayerName)) {
+    map.removeLayer(buildingLayerName);
+  }
+
+  if (map.getSource(buildingSourceName)) {
+    map.removeSource(buildingSourceName);
+  }
+  for (let i = 0; i < buildingPoints.length; i++) {
+    buildingPointsGround.push(buildingPoints[i]);
+    var x = buildingPoints[i][0];
+    var y = buildingPoints[i][1];
+    var z = buildingHeight / 3.28;
+    var buildingPointGround = [
+      x - ((z / tanAmp) * sinAz) / 84540.7,
+      y - ((z / tanAmp) * cosAz) / 111047.7,
+    ];
+    buildingPointsGround.push(buildingPointGround);
+  }
+  var hullPoints = makeHull(buildingPointsGround);
+  hulls.push(hullPoints);
+
+  map.addSource(buildingSourceName, {
+    type: "geojson",
+    data: {
+      type: "Feature",
+      geometry: {
+        type: "Polygon",
+        // These coordinates outline Maine.
+        coordinates: [hullPoints],
+      },
+    },
+  });
+
+  map.addLayer({
+    id: buildingLayerName,
+    type: "fill",
+    source: buildingSourceName, // reference the data source
+    layout: {},
+    paint: {
+      "fill-color": "#424359", // blue color fill
+      "fill-opacity": 0.2,
+    },
+  });
+}
+
+function shadow(date, callback) {
+  var sunPosition = SunCalc.getPosition(date, lat, lon);
+  var az = (sunPosition["azimuth"] * 180) / Math.PI;
+  var amp = (sunPosition["altitude"] * 180) / Math.PI;
+
+  var az = parseFloat(az);
+  var amp = parseFloat(amp);
+
+  sinAz = Math.sin((az * Math.PI) / 180);
+  cosAz = Math.cos((az * Math.PI) / 180);
+  tanAz = Math.tan((az * Math.PI) / 180);
+  sinAmp = Math.sin(((amp - 90) * Math.PI) / 180);
+  cosAmp = Math.cos(((amp - 90) * Math.PI) / 180);
+  tanAmp = Math.tan((-amp * Math.PI) / 180);
+
+  // map.removeLayer("tree");
+  shadedPoints = [];
+  shadingPoints = [];
+  otherPoints = [];
+
+  //add in building shadow code
+  hulls = [];
+  for (var building of selectedBuildings) {
+    getBuildingShadow(building);
+  }
+
+  //end building shadow code
+
+  //start update tree
+  for (var tree_id of selectedTreeIds) {
+    var pointCloudId = `tree${tree_id}`;
+    var pointCloudFile = `data/pointCloudJSONs/${tree_id}.json`;
+    // console.log(pointCloudFile);
+    var shadowId = `shadow${tree_id}`;
+
+    if (map.getLayer(pointCloudId)) {
+      map.removeLayer(pointCloudId);
+    }
+    if (map.getLayer(shadowId)) {
+      map.removeLayer(shadowId);
+    }
+    map.addLayer(
+      new MapboxLayer({
+        id: pointCloudId,
+        type: PointCloudLayer,
+        data: pointCloudFile,
+        getPosition: (d) => [d[1], d[0], d[2]],
+        getColor: (d) =>
+          pointColor(
+            [d[1], d[0], d[2]],
+            hulls,
+            tanAmp,
+            sinAmp,
+            cosAz,
+            treeColor
+          ),
+        sizeUnits: "feet",
+        pointSize: 3,
+        opacity: 0.8,
+        visible: true,
+      })
+    );
+
+    // //end update tree
+
+    map.addLayer(
+      new MapboxLayer({
+        id: shadowId,
+        type: PointCloudLayer,
+        data: pointCloudFile,
+        getPosition: (d) => [
+          d[1] - ((d[2] / tanAmp) * sinAz) / 84540.7,
+          d[0] - ((d[2] / tanAmp) * cosAz) / 111047.7,
+          d[2] * 0,
+        ], //approx degree to meter conversion from here: http://www.csgnetwork.com/degreelenllavcalc.html
+        getColor: (d) =>
+          pointColor(
+            [d[1], d[0], d[2]],
+            hulls,
+            tanAmp,
+            sinAmp,
+            cosAz,
+            shadowColor
+          ), // [ d[2] , d[2], d[2], 255*(d[5]-d[4])-d[2] ],
+        sizeUnits: "feet",
+        pointSize: 4,
+        opacity: 0.1,
+        visible: true,
+      })
+    );
+  }
+  setTimeout(() => {
+    callback();
+  }, 500);
+}
+
+function stretchHoursBar() {
+  var day = parseFloat(document.getElementById("dayslider").value);
+  var hour = parseFloat(document.getElementById("hourslider").value);
+
+  var date = new Date("2022-01-01 00:00");
+  date.setDate(date.getDate() + day);
+  date.setTime(date.getTime() + hour * 60 * 60 * 1000);
+  var offset = date.getTimezoneOffset();
+
+  var dist = 183 - Math.abs(183 - day);
+  var adjusted = (dist * 114) / 183;
+
+  var times = SunCalc.getTimes(date, 40.7, -70.6);
+  var min =
+    times.sunrise.getHours() +
+    times.sunrise.getMinutes() / 60.0 -
+    offset / 60 +
+    0.5;
+  var max =
+    times.sunset.getHours() +
+    times.sunset.getMinutes() / 60.0 -
+    offset / 60 -
+    0.5;
+
+  var width = (max - min) * 4;
+  var buffer = (100 - width) / 2;
+  document.getElementById("hourslider").min = min;
+  document.getElementById("hourslider").max = max;
+  document.getElementById("hourslider").style.width = width
+    .toString()
+    .concat("%");
+  document.getElementById("hourslider").style.marginLeft = buffer
+    .toString()
+    .concat("%");
+}
 
 // alternative convexHull function from https://www.nayuki.io/page/convex-hull-algorithm
 function makeHull(points) {
@@ -588,7 +598,7 @@ function inside(point, vs) {
   return inside;
 }
 
-function pointColor(point, vs, tanAmp, sinAmp, cosAz) {
+function pointColor(point, vs, tanAmp, sinAmp, cosAz, mode) {
   var x = point[0];
   var y = point[1];
   var z = point[2];
@@ -614,17 +624,29 @@ function pointColor(point, vs, tanAmp, sinAmp, cosAz) {
       isShaded = true;
     }
   }
+  let color;
 
   if (isShaded) {
     shadedPoints.push([x, y, z]);
-    return [25 + z * 5, 50 + z * 8, 100 + z * 7];
+    color = [25 + z * 5, 50 + z * 8, 100 + z * 7];
   } else if (isShading) {
     shadingPoints.push([x, y, z]);
-    return [255, 50 + z * 10, 75];
+    color = [255, 50 + z * 10, 75];
   } else {
     otherPoints.push([x, y, z]);
-    return [75 + z * z * 0.75, 175 + z * 10, 10 + z * 5];
+    color = [75 + z * z * 0.75, 175 + z * 10, 10 + z * 5];
   }
+  switch (mode) {
+    case "grey":
+      color = [169, 169, 169];
+      break;
+    case "green":
+      color = [75 + z * z * 0.75, 175 + z * 10, 10 + z * 5];
+      break;
+    default:
+  }
+
+  return color;
 }
 
 function htmlCountUpdate() {
@@ -695,60 +717,19 @@ function onRefresh() {
 }
 
 function onGreyShadowColor() {
-  for (var tree_id of selectedTreeIds) {
-    var pointCloudFile = `data/pointCloudJSONs/${tree_id}.json`;
-    var shadowId = `shadow${tree_id}`;
-    if (map.getLayer(shadowId)) {
-      map.removeLayer(shadowId);
-    }
-    map.addLayer(
-      new MapboxLayer({
-        id: shadowId,
-        type: PointCloudLayer,
-        data: pointCloudFile,
-        getPosition: (d) => [
-          d[1] - ((d[2] / tanAmp) * sinAz) / 84540.7,
-          d[0] - ((d[2] / tanAmp) * cosAz) / 111047.7,
-          d[2] * 0,
-        ], //approx degree to meter conversion from here: http://www.csgnetwork.com/degreelenllavcalc.html
-        getColor: (d) => [169, 169, 169], // [ d[2] , d[2], d[2], 255*(d[5]-d[4])-d[2] ],
-        sizeUnits: "feet",
-        pointSize: 4,
-        opacity: 0.1,
-        visible: true,
-      })
-    );
-  }
+  shadowColor = "grey";
+  shadow(date, (e) => {
+    console.log("changed shadow color theme");
+  });
   greyShadowButton.setAttribute("active", "true");
   colorShadowButton.setAttribute("active", "false");
 }
 
 function onColorShadowColor() {
-  for (var tree_id of selectedTreeIds) {
-    var pointCloudFile = `data/pointCloudJSONs/${tree_id}.json`;
-    var shadowId = `shadow${tree_id}`;
-    if (map.getLayer(shadowId)) {
-      map.removeLayer(shadowId);
-    }
-    map.addLayer(
-      new MapboxLayer({
-        id: shadowId,
-        type: PointCloudLayer,
-        data: pointCloudFile,
-        getPosition: (d) => [
-          d[1] - ((d[2] / tanAmp) * sinAz) / 84540.7,
-          d[0] - ((d[2] / tanAmp) * cosAz) / 111047.7,
-          d[2] * 0,
-        ], //approx degree to meter conversion from here: http://www.csgnetwork.com/degreelenllavcalc.html
-        getColor: (d) =>
-          pointColor([d[1], d[0], d[2]], hulls, tanAmp, sinAmp, cosAz), // [ d[2] , d[2], d[2], 255*(d[5]-d[4])-d[2] ],
-        sizeUnits: "feet",
-        pointSize: 4,
-        opacity: 0.1,
-        visible: true,
-      })
-    );
-  }
+  shadowColor = "color";
+  shadow(date, (e) => {
+    console.log("changed shadow color theme");
+  });
   colorShadowButton.setAttribute("active", "true");
   greyShadowButton.setAttribute("active", "false");
 }
@@ -764,7 +745,31 @@ greyShadowButton.addEventListener("click", onGreyShadowColor);
 const colorShadowButton = document.getElementById("color-button");
 colorShadowButton.addEventListener("click", onColorShadowColor);
 
+function onGreenTree() {
+  treeColor = "green";
+  shadow(date, (e) => {
+    console.log("changed tree color theme");
+  });
+  greenTreeButton.setAttribute("active", "true");
+  colorTreeButton.setAttribute("active", "false");
+}
+
+function onColorTree() {
+  treeColor = "color";
+  shadow(date, (e) => {
+    console.log("changed tree color theme");
+  });
+  colorTreeButton.setAttribute("active", "true");
+  greenTreeButton.setAttribute("active", "false");
+}
+
 // toggle tree color between grey and color
+
+const greenTreeButton = document.getElementById("tree-green-button");
+greenTreeButton.addEventListener("click", onGreenTree);
+
+const colorTreeButton = document.getElementById("tree-color-button");
+colorTreeButton.addEventListener("click", onColorTree);
 
 document.querySelector(".burger-menu").addEventListener("click", function () {
   this.classList.toggle("open");

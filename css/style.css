@@ -109,10 +109,7 @@
   background-color: rgba(190, 190, 190, 0.8);
 }
 
-.map-overlay-menu #grey-button[active="true"] {
-  background-color: rgba(190, 190, 190, 0.8);
-}
-.map-overlay-menu #color-button[active="true"] {
+.map-overlay-menu .button[active="true"] {
   background-color: rgba(190, 190, 190, 0.8);
 }
 
