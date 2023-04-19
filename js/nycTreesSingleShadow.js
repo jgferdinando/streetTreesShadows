@@ -28,9 +28,13 @@ var sinAmp;
 var cosAmp;
 var tanAmp;
 
-var shadedPoints = [];
-var shadingPoints = [];
-var otherPoints = [];
+// var shadedPoints = [];
+// var shadingPoints = [];
+// var otherPoints = [];
+
+var shadedPoints = {};
+var shadingPoints = {};
+var otherPoints = {};
 
 var building;
 var selectedBins = [];
@@ -126,6 +130,87 @@ map.on("load", function () {
     },
   });
 
+  const popup = new mapboxgl.Popup({
+    closeButton: false,
+    closeOnClick: false,
+  });
+
+  map.on("mouseenter", "trees1", (e) => {
+    // Change the cursor style as a UI indicator.
+    map.getCanvas().style.cursor = "pointer";
+
+    // Copy coordinates array.
+    const coordinates = e.features[0].geometry.coordinates.slice();
+    const tree_id = e.features[0].properties.tree_id;
+    const spc_common = e.features[0].properties.spc_common;
+    const spc_latin = e.features[0].properties.spc_latin;
+    const address = e.features[0].properties.address;
+    const status = e.features[0].properties.status;
+    const health = e.features[0].properties.health;
+    const truckDiameter = e.features[0].properties.tree_dbh;
+    const canopyRadius = e.features[0].properties.canopy_radius_calc_ft;
+    const height = e.features[0].properties.zrange;
+    const density = e.features[0].properties.density;
+
+    // console.log(`TreeId: ${tree_id}`);
+    // console.log(shadedPoints);
+    if (shadedPoints[tree_id] == undefined) {
+      shadedPoints[tree_id] = [];
+    }
+    if (shadingPoints[tree_id] == undefined) {
+      shadingPoints[tree_id] = [];
+    }
+    if (otherPoints[tree_id] == undefined) {
+      otherPoints[tree_id] = [];
+    }
+    const totalPoint =
+      shadedPoints[tree_id].length +
+      shadingPoints[tree_id].length +
+      otherPoints[tree_id].length;
+    let shadedPointPercentage =
+      (shadedPoints[tree_id].length / totalPoint) * 100;
+    shadedPointPercentage = shadedPointPercentage.toFixed(2) + "%";
+    let shadingPointPercentage =
+      (shadingPoints[tree_id].length / totalPoint) * 100;
+    shadingPointPercentage = shadingPointPercentage.toFixed(2) + "%";
+    let otherPointPercentage = (otherPoints[tree_id].length / totalPoint) * 100;
+    otherPointPercentage = otherPointPercentage.toFixed(2) + "%";
+
+    // Ensure that if the map is zoomed out such that multiple
+    // copies of the feature are visible, the popup appears
+    // over the copy being pointed to.
+    while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
+      coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
+    }
+
+    // Populate the popup and set its coordinates
+    // based on the feature found.
+    let description = `
+    <div class="popup-species">
+        <h3 class="spc_common">${spc_common}</h3>
+        <h5 class="spc_latin">${spc_latin}</h5>
+      </div>
+      <div class="popup-details">
+        <p><strong>Address:</strong> ${address}</p>
+        <p><strong>Status:</strong> ${status}</p>
+        <p><strong>Health:</strong> ${health}</p>
+        <p><strong>Truck Diameter:</strong> ${truckDiameter}</p>
+        <p><strong>Canopy Radius:</strong> ${canopyRadius}</p>
+        <p><strong>Height:</strong> ${height}</p>
+        <p><strong>Density:</strong> ${density}</p>
+        <p><strong>Shaded Percent:</strong> ${shadedPointPercentage}</p>
+        <p><strong>Shading Percent:</strong> ${shadingPointPercentage}</p>
+        <p><strong>Other Percent:</strong> ${otherPointPercentage}</p>
+      </div>
+    `;
+    popup.setLngLat(coordinates).setHTML(description).addTo(map);
+  });
+
+  map.on("mouseleave", "trees1", () => {
+    map.getCanvas().style.cursor = "";
+    popup.remove();
+  });
+
   //
 
   map.on("mouseenter", "trees1", function (e) {
@@ -142,24 +227,16 @@ map.on("load", function () {
   });
 
   map.on("click", "trees1", function (e) {
-    if (map.getLayer("tree")) {
-      map.removeLayer("tree");
-    }
-    if (map.getLayer("shadow")) {
-      map.removeLayer("shadow");
-    }
-
     var treeID = e.features[0].properties["tree_id"];
 
     lat = e.features[0].properties["Latitude"];
     lon = e.features[0].properties["longitude"];
 
-    // var pointCloudFile = "data/pointCloudJSONs/";
-    // var pointCloudFile = pointCloudFile.concat(treeID);
-    // var pointCloudFile = pointCloudFile.concat(".json");
     var pointCloudId = `tree${treeID}`;
     var pointCloudFile = `data/pointCloudJSONs/${treeID}.json`;
-
+    if (map.getLayer(pointCloudId)) {
+      return;
+    }
     map.addLayer(
       new MapboxLayer({
         id: pointCloudId,
@@ -173,7 +250,8 @@ map.on("load", function () {
             tanAmp,
             sinAmp,
             cosAz,
-            treeColor
+            treeColor,
+            treeID
           ),
         sizeUnits: "feet",
         pointSize: 3,
@@ -210,11 +288,6 @@ map.on("load", function () {
       e.features[0].properties["spc_latin"];
     document.getElementById("address").innerHTML =
       e.features[0].properties["address"];
-    //document.getElementById("zipcode").innerHTML = e.features[0].properties['zipcode'];
-    //document.getElementById("borough").innerHTML = e.features[0].properties['boroname'];
-    //document.getElementById("curb").innerHTML = e.features[0].properties['curb_loc'];
-    //document.getElementById("lat").innerHTML = lat;
-    //document.getElementById("lon").innerHTML = lon;
     document.getElementById("status").innerHTML =
       e.features[0].properties["status"];
     document.getElementById("health").innerHTML =
@@ -353,10 +426,9 @@ function shadow(date, callback) {
   cosAmp = Math.cos(((amp - 90) * Math.PI) / 180);
   tanAmp = Math.tan((-amp * Math.PI) / 180);
 
-  // map.removeLayer("tree");
-  shadedPoints = [];
-  shadingPoints = [];
-  otherPoints = [];
+  shadedPoints = {};
+  shadingPoints = {};
+  otherPoints = {};
 
   //add in building shadow code
   hulls = [];
@@ -367,7 +439,8 @@ function shadow(date, callback) {
   //end building shadow code
 
   //start update tree
-  for (var tree_id of selectedTreeIds) {
+  console.log(`From shadow func current selected trees: ${selectedTreeIds}`);
+  for (const tree_id of selectedTreeIds) {
     var pointCloudId = `tree${tree_id}`;
     var pointCloudFile = `data/pointCloudJSONs/${tree_id}.json`;
     // console.log(pointCloudFile);
@@ -392,7 +465,8 @@ function shadow(date, callback) {
             tanAmp,
             sinAmp,
             cosAz,
-            treeColor
+            treeColor,
+            tree_id
           ),
         sizeUnits: "feet",
         pointSize: 3,
@@ -420,7 +494,8 @@ function shadow(date, callback) {
             tanAmp,
             sinAmp,
             cosAz,
-            shadowColor
+            shadowColor,
+            tree_id
           ), // [ d[2] , d[2], d[2], 255*(d[5]-d[4])-d[2] ],
         sizeUnits: "feet",
         pointSize: 4,
@@ -598,11 +673,11 @@ function inside(point, vs) {
   return inside;
 }
 
-function pointColor(point, vs, tanAmp, sinAmp, cosAz, mode) {
+function pointColor(point, vs, tanAmp, sinAmp, cosAz, mode, tree_id) {
   var x = point[0];
   var y = point[1];
   var z = point[2];
-
+  // console.log(`from pointColor func current tree_id: ${tree_id}`);
   var xg = x - ((z / tanAmp) * sinAz) / 84540.7;
   var yg = y - ((z / tanAmp) * cosAz) / 111047.7;
 
@@ -627,13 +702,22 @@ function pointColor(point, vs, tanAmp, sinAmp, cosAz, mode) {
   let color;
 
   if (isShaded) {
-    shadedPoints.push([x, y, z]);
+    if (!shadedPoints.hasOwnProperty(tree_id)) {
+      shadedPoints[tree_id] = [];
+    }
+    shadedPoints[tree_id].push(point);
     color = [25 + z * 5, 50 + z * 8, 100 + z * 7];
   } else if (isShading) {
-    shadingPoints.push([x, y, z]);
+    if (!shadingPoints.hasOwnProperty(tree_id)) {
+      shadingPoints[tree_id] = [];
+    }
+    shadingPoints[tree_id].push(point);
     color = [255, 50 + z * 10, 75];
   } else {
-    otherPoints.push([x, y, z]);
+    if (!otherPoints.hasOwnProperty(tree_id)) {
+      otherPoints[tree_id] = [];
+    }
+    otherPoints[tree_id].push(point);
     color = [75 + z * z * 0.75, 175 + z * 10, 10 + z * 5];
   }
   switch (mode) {
@@ -650,10 +734,6 @@ function pointColor(point, vs, tanAmp, sinAmp, cosAz, mode) {
 }
 
 function htmlCountUpdate() {
-  // console.log(shadedPoints.length);
-  // console.log(shadingPoints.length);
-  // console.log(otherPoints.length);
-
   document.getElementById("inshadow").innerHTML =
     shadedPoints.length.toString();
   document.getElementById("shadingbuilding").innerHTML =
@@ -673,9 +753,9 @@ function refreshUIContent() {
   document.getElementById("height").innerHTML = "";
   document.getElementById("density").innerHTML = "";
   species = "Common Name";
-  shadedPoints = [];
-  shadingPoints = [];
-  otherPoints = [];
+  shadedPoints = {};
+  shadingPoints = {};
+  otherPoints = {};
   htmlCountUpdate();
 }
 

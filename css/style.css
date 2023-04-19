@@ -338,3 +338,40 @@ tr {
   padding: 0px;
   margin: 0px;
 }
+
+.mapboxgl-popup {
+  background-color: rgba(230, 230, 230, 0.8);
+  border: solid #c0c0c0;
+  border-radius: 30px;
+  padding: 15px;
+  color: black;
+  font-family: "Helvetica Neue", Arial, Helvetica, sans-serif;
+}
+
+.popup-species {
+  text-align: center;
+}
+
+.spc_common {
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.spc_latin {
+  font-size: 18px;
+  font-style: italic;
+  margin-bottom: 15px;
+}
+
+.popup-details {
+  font-size: 14px;
+}
+
+.popup-details p {
+  margin-bottom: 5px;
+}
+
+.popup-details strong {
+  font-weight: bold;
+}
