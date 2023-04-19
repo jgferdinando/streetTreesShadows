@@ -2,10 +2,10 @@
   font: 12px/12px "Helvetica Neue", Arial, Helvetica, sans-serif;
   position: absolute;
   /* opacity: 0.7; */
-  top: 73%;
+  bottom: 1%;
   left: 2%;
   right: 2%;
-  height: 25%;
+  height: 15%;
   width: 96%;
   align-items: center;
   /* background-color: rgba(200, 200, 200, 0.5); */

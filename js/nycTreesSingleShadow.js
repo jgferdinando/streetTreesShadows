@@ -268,50 +268,49 @@ map.on("load", function () {
     var offset = date.getTimezoneOffset();
     date.setTime(date.getTime() + hour * 60 * 60 * 1000 + offset * 60 * 1000);
 
-    updateUI(e);
+    // updateUI(e);
     selectedTreeIds.push(treeID);
-    shadow(date, htmlCountUpdate);
+    shadow(date, (e) => {
+      console.log("shadow: plant new tree");
+    });
     stretchHoursBar();
   });
 
-  function updateUI(e) {
-    species = e.features[0].properties["spc_common"];
-    document.getElementById("common").innerHTML = species
-      .concat("<br> @ ")
-      .concat(date.toString().split("(").slice(0, 1));
-    var link = "https://www.designacrossscales.org/public_test/html/".concat(
-      species,
-      ".html"
-    );
-    document.getElementById("common").setAttribute("href", link);
-    document.getElementById("latin").innerHTML =
-      e.features[0].properties["spc_latin"];
-    document.getElementById("address").innerHTML =
-      e.features[0].properties["address"];
-    document.getElementById("status").innerHTML =
-      e.features[0].properties["status"];
-    document.getElementById("health").innerHTML =
-      e.features[0].properties["health"];
-    document.getElementById("trunk").innerHTML =
-      e.features[0].properties["tree_dbh"];
-    document.getElementById("canopy").innerHTML =
-      e.features[0].properties["canopy_radius_calc_ft"];
-    document.getElementById("height").innerHTML =
-      e.features[0].properties["zrange"];
-    document.getElementById("density").innerHTML =
-      e.features[0].properties["density"];
-  }
+  // function updateUI(e) {
+  //   species = e.features[0].properties["spc_common"];
+  //   document.getElementById("common").innerHTML = species
+  //     .concat("<br> @ ")
+  //     .concat(date.toString().split("(").slice(0, 1));
+  //   var link = "https://www.designacrossscales.org/public_test/html/".concat(
+  //     species,
+  //     ".html"
+  //   );
+  //   document.getElementById("common").setAttribute("href", link);
+  //   document.getElementById("latin").innerHTML =
+  //     e.features[0].properties["spc_latin"];
+  //   document.getElementById("address").innerHTML =
+  //     e.features[0].properties["address"];
+  //   document.getElementById("status").innerHTML =
+  //     e.features[0].properties["status"];
+  //   document.getElementById("health").innerHTML =
+  //     e.features[0].properties["health"];
+  //   document.getElementById("trunk").innerHTML =
+  //     e.features[0].properties["tree_dbh"];
+  //   document.getElementById("canopy").innerHTML =
+  //     e.features[0].properties["canopy_radius_calc_ft"];
+  //   document.getElementById("height").innerHTML =
+  //     e.features[0].properties["zrange"];
+  //   document.getElementById("density").innerHTML =
+  //     e.features[0].properties["density"];
+  // }
 
   map.on("click", "buildingfootprints", function (e) {
     var bin = e.features[0].properties["bin"];
     selectedBins.push(bin);
-    // console.log(selectedBins);
 
     map.setFilter("buildingExtruded", ["in", "bin", ...selectedBins]);
 
     function buildingShadowUpdate(buildings) {
-      //console.log(buildings.features)
-
       for (let i = 0; i < buildings.features.length; i++) {
         if (buildings.features[i].properties.bin == bin) {
           var building = buildings.features[i];
@@ -319,8 +318,6 @@ map.on("load", function () {
         } else {
         }
       }
-
-      // return building;
     }
     buildingShadowUpdate(buildings);
   });
@@ -332,11 +329,13 @@ map.on("load", function () {
     date.setDate(date.getDate() + day);
     var offset = date.getTimezoneOffset();
     date.setTime(date.getTime() + hour * 60 * 60 * 1000 + offset * 60 * 1000);
-    document.getElementById("common").innerHTML = species
-      .concat("<br> @ ")
-      .concat(date.toString().split("(").slice(0, 1));
+    // document.getElementById("common").innerHTML = species
+    //   .concat("<br> @ ")
+    //   .concat(date.toString().split("(").slice(0, 1));
 
-    shadow(date, htmlCountUpdate);
+    shadow(date, (e) => {
+      console.log("shadow: stretch days bar");
+    });
 
     stretchHoursBar();
   });
@@ -349,11 +348,13 @@ map.on("load", function () {
     date.setDate(date.getDate() + day);
     var offset = date.getTimezoneOffset();
     date.setTime(date.getTime() + hour * 60 * 60 * 1000 + offset * 60 * 1000);
-    document.getElementById("common").innerHTML = species
-      .concat("<br> @ ")
-      .concat(date.toString().split("(").slice(0, 1));
+    // document.getElementById("common").innerHTML = species
+    //   .concat("<br> @ ")
+    //   .concat(date.toString().split("(").slice(0, 1));
 
-    shadow(date, htmlCountUpdate);
+    shadow(date, (e) => {
+      console.log("shadow: stretch hours bar");
+    });
   });
 });
 
@@ -733,31 +734,31 @@ function pointColor(point, vs, tanAmp, sinAmp, cosAz, mode, tree_id) {
   return color;
 }
 
-function htmlCountUpdate() {
-  document.getElementById("inshadow").innerHTML =
-    shadedPoints.length.toString();
-  document.getElementById("shadingbuilding").innerHTML =
-    shadingPoints.length.toString();
-  document.getElementById("shadingground").innerHTML =
-    otherPoints.length.toString();
-}
+// function htmlCountUpdate() {
+//   document.getElementById("inshadow").innerHTML =
+//     shadedPoints.length.toString();
+//   document.getElementById("shadingbuilding").innerHTML =
+//     shadingPoints.length.toString();
+//   document.getElementById("shadingground").innerHTML =
+//     otherPoints.length.toString();
+// }
 
-function refreshUIContent() {
-  document.getElementById("common").innerHTML = "Common Name";
-  document.getElementById("latin").innerHTML = "Latin Name";
-  document.getElementById("address").innerHTML = "";
-  document.getElementById("status").innerHTML = "";
-  document.getElementById("health").innerHTML = "";
-  document.getElementById("trunk").innerHTML = "";
-  document.getElementById("canopy").innerHTML = "";
-  document.getElementById("height").innerHTML = "";
-  document.getElementById("density").innerHTML = "";
-  species = "Common Name";
-  shadedPoints = {};
-  shadingPoints = {};
-  otherPoints = {};
-  htmlCountUpdate();
-}
+// function refreshUIContent() {
+//   document.getElementById("common").innerHTML = "Common Name";
+//   document.getElementById("latin").innerHTML = "Latin Name";
+//   document.getElementById("address").innerHTML = "";
+//   document.getElementById("status").innerHTML = "";
+//   document.getElementById("health").innerHTML = "";
+//   document.getElementById("trunk").innerHTML = "";
+//   document.getElementById("canopy").innerHTML = "";
+//   document.getElementById("height").innerHTML = "";
+//   document.getElementById("density").innerHTML = "";
+//   species = "Common Name";
+//   shadedPoints = {};
+//   shadingPoints = {};
+//   otherPoints = {};
+//   htmlCountUpdate();
+// }
 
 function onRefresh() {
   // Remove all trees and tree shadows
