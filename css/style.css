@@ -375,3 +375,25 @@ tr {
 .popup-details strong {
   font-weight: bold;
 }
+
+.shaded-percent,
+.shading-percent,
+.other-percent {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 5px;
+  color: white;
+  font-weight: bold;
+}
+
+.shaded-percent {
+  background-color: orange;
+}
+
+.shading-percent {
+  background-color: blue;
+}
+
+.other-percent {
+  background-color: green;
+}

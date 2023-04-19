@@ -198,9 +198,9 @@ map.on("load", function () {
         <p><strong>Canopy Radius:</strong> ${canopyRadius}</p>
         <p><strong>Height:</strong> ${height}</p>
         <p><strong>Density:</strong> ${density}</p>
-        <p><strong>Shaded Percent:</strong> ${shadedPointPercentage}</p>
-        <p><strong>Shading Percent:</strong> ${shadingPointPercentage}</p>
-        <p><strong>Other Percent:</strong> ${otherPointPercentage}</p>
+        <p><strong>Shaded Percent:</strong> <span class="shaded-percent">${shadedPointPercentage}</span></p>
+        <p><strong>Shading Percent:</strong> <span class="shading-percent">${shadingPointPercentage}</span></p>
+        <p><strong>Other Percent:</strong> <span class="other-percent">${otherPointPercentage}</span></p>
       </div>
     `;
     popup.setLngLat(coordinates).setHTML(description).addTo(map);
