@@ -196,6 +196,14 @@ a:active {
   margin-bottom: 4px;
 }
 
+.control-name-span {
+  font: 10px/10px "Helvetica Neue", Arial, Helvetica, sans-serif;
+  font-weight: 300;
+  margin-left: 20px;
+  margin-top: 4px;
+  margin-bottom: 4px;
+}
+
 .attribute-name {
   font: 16px/16px "Helvetica Neue", Arial, Helvetica, sans-serif;
   font-weight: 300;
@@ -339,13 +347,37 @@ tr {
   margin: 0px;
 }
 
-.mapboxgl-popup {
+/* .mapboxgl-popup {
   background-color: rgba(230, 230, 230, 0.8);
   border: solid #c0c0c0;
   border-radius: 30px;
   padding: 15px;
+} */
+.mapboxgl-popup {
+  transform: none !important;
+  top: 15%;
+  left: 5%;
+}
+.mapboxgl-popup-anchor-top .mapboxgl-popup-tip,
+.mapboxgl-popup-anchor-bottom .mapboxgl-popup-tip,
+.mapboxgl-popup-anchor-center .mapboxgl-popup-tip,
+.mapboxgl-popup-anchor-left .mapboxgl-popup-tip,
+.mapboxgl-popup-anchor-right .mapboxgl-popup-tip,
+.mapboxgl-popup-anchor-bottom-right .mapboxgl-popup-tip,
+.mapboxgl-popup-anchor-bottom-left .mapboxgl-popup-tip,
+.mapboxgl-popup-anchor-top-right .mapboxgl-popup-tip,
+.mapboxgl-popup-anchor-top-left .mapboxgl-popup-tip {
+  display: none !important;
+}
+
+.mapboxgl-popup-content {
   color: black;
-  font-family: "Helvetica Neue", Arial, Helvetica, sans-serif;
+  font: 12px/12px "Helvetica Neue", Arial, Helvetica, sans-serif;
+  padding: 10px;
+  width: 250px;
+  background-color: rgba(230, 230, 230, 0.8);
+  border: solid #c0c0c0;
+  border-radius: 30px;
 }
 
 .popup-species {
@@ -387,13 +419,26 @@ tr {
 }
 
 .shaded-percent {
-  background-color: orange;
+  background-color: rgba(39, 72, 100, 255);
 }
 
 .shading-percent {
-  background-color: blue;
+  background-color: rgba(177, 98, 52, 255);
 }
 
 .other-percent {
-  background-color: green;
+  background-color: rgba(83, 174, 36, 255);
+}
+
+.dashboard {
+  top: 15%;
+  left: 5%;
+  position: absolute;
+  color: black;
+  font: 12px/12px "Helvetica Neue", Arial, Helvetica, sans-serif;
+  padding: 10px;
+  width: 250px;
+  background-color: rgba(230, 230, 230, 0.8);
+  border: solid #c0c0c0;
+  border-radius: 30px;
 }

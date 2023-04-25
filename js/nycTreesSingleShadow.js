@@ -28,10 +28,6 @@ var sinAmp;
 var cosAmp;
 var tanAmp;
 
-// var shadedPoints = [];
-// var shadingPoints = [];
-// var otherPoints = [];
-
 var shadedPoints = {};
 var shadingPoints = {};
 var otherPoints = {};
@@ -50,6 +46,7 @@ fetch("./data/tile987187buildings.geojson")
   .then((data) => (buildings = data));
 
 map.on("load", function () {
+  updateDayHourBar();
   map.removeLayer("building");
 
   map.addSource("trees", {
@@ -152,8 +149,6 @@ map.on("load", function () {
     const height = e.features[0].properties.zrange;
     const density = e.features[0].properties.density;
 
-    // console.log(`TreeId: ${tree_id}`);
-    // console.log(shadedPoints);
     if (shadedPoints[tree_id] == undefined) {
       shadedPoints[tree_id] = [];
     }
@@ -203,12 +198,14 @@ map.on("load", function () {
         <p><strong>Other Percent:</strong> <span class="other-percent">${otherPointPercentage}</span></p>
       </div>
     `;
+    document.getElementById("board").style.display = "none";
     popup.setLngLat(coordinates).setHTML(description).addTo(map);
   });
 
   map.on("mouseleave", "trees1", () => {
     map.getCanvas().style.cursor = "";
     popup.remove();
+    document.getElementById("board").style.display = "block";
   });
 
   //
@@ -233,7 +230,7 @@ map.on("load", function () {
     lon = e.features[0].properties["longitude"];
 
     var pointCloudId = `tree${treeID}`;
-    var pointCloudFile = `data/pointCloudJSONs/${treeID}.json`;
+    var pointCloudFile = `data/pointCloudJSONs_ver2021/${treeID}.json`;
     if (map.getLayer(pointCloudId)) {
       return;
     }
@@ -260,8 +257,8 @@ map.on("load", function () {
       })
     );
 
-    var day = parseFloat(document.getElementById("dayslider").value);
-    var hour = parseFloat(document.getElementById("hourslider").value);
+    let day = parseFloat(document.getElementById("dayslider").value);
+    let hour = parseFloat(document.getElementById("hourslider").value);
 
     date = new Date("2022-01-01 00:00");
     date.setDate(date.getDate() + day);
@@ -271,38 +268,51 @@ map.on("load", function () {
     // updateUI(e);
     selectedTreeIds.push(treeID);
     shadow(date, (e) => {
-      console.log("shadow: plant new tree");
+      // console.log("shadow: plant new tree");
     });
     stretchHoursBar();
   });
 
-  // function updateUI(e) {
-  //   species = e.features[0].properties["spc_common"];
-  //   document.getElementById("common").innerHTML = species
-  //     .concat("<br> @ ")
-  //     .concat(date.toString().split("(").slice(0, 1));
-  //   var link = "https://www.designacrossscales.org/public_test/html/".concat(
-  //     species,
-  //     ".html"
-  //   );
-  //   document.getElementById("common").setAttribute("href", link);
-  //   document.getElementById("latin").innerHTML =
-  //     e.features[0].properties["spc_latin"];
-  //   document.getElementById("address").innerHTML =
-  //     e.features[0].properties["address"];
-  //   document.getElementById("status").innerHTML =
-  //     e.features[0].properties["status"];
-  //   document.getElementById("health").innerHTML =
-  //     e.features[0].properties["health"];
-  //   document.getElementById("trunk").innerHTML =
-  //     e.features[0].properties["tree_dbh"];
-  //   document.getElementById("canopy").innerHTML =
-  //     e.features[0].properties["canopy_radius_calc_ft"];
-  //   document.getElementById("height").innerHTML =
-  //     e.features[0].properties["zrange"];
-  //   document.getElementById("density").innerHTML =
-  //     e.features[0].properties["density"];
-  // }
+  function updateUI(e) {
+    species = e.features[0].properties["spc_common"];
+    document.getElementById("common").innerHTML = species
+      .concat("<br> @ ")
+      .concat(date.toString().split("(").slice(0, 1));
+    var link = "https://www.designacrossscales.org/public_test/html/".concat(
+      species,
+      ".html"
+    );
+    document.getElementById("common").setAttribute("href", link);
+    document.getElementById("latin").innerHTML =
+      e.features[0].properties["spc_latin"];
+    document.getElementById("address").innerHTML =
+      e.features[0].properties["address"];
+    document.getElementById("status").innerHTML =
+      e.features[0].properties["status"];
+    document.getElementById("health").innerHTML =
+      e.features[0].properties["health"];
+    document.getElementById("trunk").innerHTML =
+      e.features[0].properties["tree_dbh"];
+    document.getElementById("canopy").innerHTML =
+      e.features[0].properties["canopy_radius_calc_ft"];
+    document.getElementById("height").innerHTML =
+      e.features[0].properties["zrange"];
+    document.getElementById("density").innerHTML =
+      e.features[0].properties["density"];
+  }
+  function updateDayHourBar() {
+    let day = parseFloat(document.getElementById("dayslider").value);
+    let hour = parseFloat(document.getElementById("hourslider").value);
+    date = new Date("2022-01-01 00:00");
+    date.setDate(date.getDate() + day);
+    var offset = date.getTimezoneOffset();
+    date.setTime(date.getTime() + hour * 60 * 60 * 1000 + offset * 60 * 1000);
+    let dateString = date.toString().split(" ");
+    day = `${dateString[1]} ${dateString[2]}`;
+    hour = `${dateString[4].split(":")[0]}:00 EST`;
+    document.getElementById("day").innerHTML = day;
+    document.getElementById("hour").innerHTML = hour;
+  }
 
   map.on("click", "buildingfootprints", function (e) {
     var bin = e.features[0].properties["bin"];
@@ -323,37 +333,19 @@ map.on("load", function () {
   });
 
   document.getElementById("dayslider").addEventListener("input", function (h) {
-    var day = parseFloat(document.getElementById("dayslider").value);
-    var hour = parseFloat(document.getElementById("hourslider").value);
-    date = new Date("2022-01-01 00:00");
-    date.setDate(date.getDate() + day);
-    var offset = date.getTimezoneOffset();
-    date.setTime(date.getTime() + hour * 60 * 60 * 1000 + offset * 60 * 1000);
-    // document.getElementById("common").innerHTML = species
-    //   .concat("<br> @ ")
-    //   .concat(date.toString().split("(").slice(0, 1));
-
+    updateDayHourBar();
     shadow(date, (e) => {
-      console.log("shadow: stretch days bar");
+      // console.log("shadow: stretch days bar");
     });
 
     stretchHoursBar();
   });
 
   document.getElementById("hourslider").addEventListener("input", function (h) {
-    var day = parseFloat(document.getElementById("dayslider").value);
-    var hour = parseFloat(document.getElementById("hourslider").value);
-    //import suncalc from "suncalc";
-    date = new Date("2022-01-01 00:00");
-    date.setDate(date.getDate() + day);
-    var offset = date.getTimezoneOffset();
-    date.setTime(date.getTime() + hour * 60 * 60 * 1000 + offset * 60 * 1000);
-    // document.getElementById("common").innerHTML = species
-    //   .concat("<br> @ ")
-    //   .concat(date.toString().split("(").slice(0, 1));
+    updateDayHourBar();
 
     shadow(date, (e) => {
-      console.log("shadow: stretch hours bar");
+      // console.log("shadow: stretch hours bar");
     });
   });
 });
@@ -440,10 +432,10 @@ function shadow(date, callback) {
   //end building shadow code
 
   //start update tree
-  console.log(`From shadow func current selected trees: ${selectedTreeIds}`);
+  // console.log(`From shadow func current selected trees: ${selectedTreeIds}`);
   for (const tree_id of selectedTreeIds) {
     var pointCloudId = `tree${tree_id}`;
-    var pointCloudFile = `data/pointCloudJSONs/${tree_id}.json`;
+    var pointCloudFile = `data/pointCloudJSONs_ver2021/${tree_id}.json`;
     // console.log(pointCloudFile);
     var shadowId = `shadow${tree_id}`;
 
@@ -506,8 +498,10 @@ function shadow(date, callback) {
     );
   }
   setTimeout(() => {
-    callback();
+    htmlCountUpdate();
   }, 500);
+
+  callback();
 }
 
 function stretchHoursBar() {
@@ -734,31 +728,52 @@ function pointColor(point, vs, tanAmp, sinAmp, cosAz, mode, tree_id) {
   return color;
 }
 
-// function htmlCountUpdate() {
-//   document.getElementById("inshadow").innerHTML =
-//     shadedPoints.length.toString();
-//   document.getElementById("shadingbuilding").innerHTML =
-//     shadingPoints.length.toString();
-//   document.getElementById("shadingground").innerHTML =
-//     otherPoints.length.toString();
-// }
+function htmlCountUpdate() {
+  let totalShaded = 0;
+  let totalShading = 0;
+  let totalOther = 0;
+  for (const tree in shadedPoints) {
+    totalShaded += shadedPoints[tree].length;
+  }
+  for (const tree in shadingPoints) {
+    totalShading += shadingPoints[tree].length;
+  }
+  for (const tree in otherPoints) {
+    totalOther += otherPoints[tree].length;
+  }
+  let totalPoint = totalShaded + totalShading + totalOther;
+  let totalShadedPercent = (totalShaded / totalPoint) * 100;
+  let totalShadingPercent = (totalShading / totalPoint) * 100;
+  let totalOtherPercent = (totalOther / totalPoint) * 100;
+  document.getElementById("numOfTrees").innerHTML =
+    selectedTreeIds.length.toString();
+  document.getElementById(
+    "shadedTree"
+  ).innerHTML = `${totalShadedPercent.toFixed(2)}%`;
+  document.getElementById(
+    "shadingTree"
+  ).innerHTML = `${totalShadingPercent.toFixed(2)}%`;
+  document.getElementById("otherTree").innerHTML = `${totalOtherPercent.toFixed(
+    2
+  )}%`;
+}
 
-// function refreshUIContent() {
-//   document.getElementById("common").innerHTML = "Common Name";
-//   document.getElementById("latin").innerHTML = "Latin Name";
-//   document.getElementById("address").innerHTML = "";
-//   document.getElementById("status").innerHTML = "";
-//   document.getElementById("health").innerHTML = "";
-//   document.getElementById("trunk").innerHTML = "";
-//   document.getElementById("canopy").innerHTML = "";
-//   document.getElementById("height").innerHTML = "";
-//   document.getElementById("density").innerHTML = "";
-//   species = "Common Name";
-//   shadedPoints = {};
-//   shadingPoints = {};
-//   otherPoints = {};
-//   htmlCountUpdate();
-// }
+function refreshUIContent() {
+  // document.getElementById("common").innerHTML = "Common Name";
+  // document.getElementById("latin").innerHTML = "Latin Name";
+  // document.getElementById("address").innerHTML = "";
+  // document.getElementById("status").innerHTML = "";
+  // document.getElementById("health").innerHTML = "";
+  // document.getElementById("trunk").innerHTML = "";
+  // document.getElementById("canopy").innerHTML = "";
+  // document.getElementById("height").innerHTML = "";
+  // document.getElementById("density").innerHTML = "";
+  // species = "Common Name";
+  shadedPoints = {};
+  shadingPoints = {};
+  otherPoints = {};
+  htmlCountUpdate();
+}
 
 function onRefresh() {
   // Remove all trees and tree shadows
