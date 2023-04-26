@@ -23,21 +23,17 @@
   gap: 3rem;
   overflow: visible; /* Add this line */
   position: absolute;
-  top: 10%;
+  top: 3%;
   right: 2%;
-  /* background-color: rgba(230, 230, 230, 0.8);
-  color: black;
-  border: solid #c0c0c0;
-  border-radius: 30px; */
 }
 
 .burger-menu {
   display: inline-block;
   cursor: pointer;
   position: absolute;
-  top: 10%;
-  right: 2%;
+
   z-index: 2;
+  font: 10px;
 }
 
 .burger-menu span {
@@ -66,25 +62,26 @@
   top: 100%;
   right: 0;
   background-color: rgba(240, 240, 240, 0.8);
-  padding: 15px;
+  padding: 5% 2.5%;
   box-shadow: 0 3px 6px rgba(0, 0, 0, 0.16), 0 3px 6px rgba(0, 0, 0, 0.23);
   transition: all 0.3s ease;
   opacity: 0;
   pointer-events: none;
   z-index: 100;
   margin-top: 3rem;
-  border-radius: 10px;
+  border-radius: 5px;
+  width: 200px;
 }
 
 .menu-items h3 {
-  font-size: 16px;
+  font-size: 80%;
   font-weight: bold;
   text-align: center;
   margin: 5px 0;
 }
 
 .menu-items hr {
-  margin: 10px 0;
+  margin: 15px 12px;
   border: 1px solid lightgrey;
 }
 
@@ -94,17 +91,29 @@
 }
 
 /* end of burger menu styles */
+.refresh-container {
+  text-align: center;
+}
 
 .map-overlay-menu .button {
   flex: 1;
   text-align: center;
-  padding: 20px;
-  margin: 20px;
+  padding: 10px;
+  margin: 15px;
   border: solid #c0c0c0;
   cursor: pointer;
   cursor: pointer;
-  border-radius: 30px;
+  border-radius: 20px;
+  font-size: 14px;
+  width: 35%;
 }
+
+.center-button {
+  display: inline-block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
 .map-overlay-menu .button:hover {
   background-color: rgba(190, 190, 190, 0.8);
 }
