@@ -402,6 +402,7 @@ tr {
 .spc_latin {
   font-size: 18px;
   font-style: italic;
+  line-height: 20px;
   margin-bottom: 15px;
 }
 
