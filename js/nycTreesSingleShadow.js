@@ -28,9 +28,9 @@ var sinAmp;
 var cosAmp;
 var tanAmp;
 
-var shadedPoints = [];
-var shadingPoints = [];
-var otherPoints = [];
+var shadedPoints = {};
+var shadingPoints = {};
+var otherPoints = {};
 
 var building;
 var selectedBins = [];
@@ -38,21 +38,15 @@ var selectedBuildings = [];
 var selectedTreeIds = [];
 var buildingFilter = ["in", "bin"];
 
-//
+var treeColor = "color";
+var shadowColor = "color";
 
-//
-
-// fetch("./data/bondGardenBuildingWest.geojson")
-//   .then((response) => response.json())
-//   .then((data) => (buildings = data))
-//   .then((json) => (building = buildings.features[0]));
 fetch("./data/tile987187buildings.geojson")
   .then((response) => response.json())
   .then((data) => (buildings = data));
 
-////////////
-
 map.on("load", function () {
+  updateDayHourBar();
   map.removeLayer("building");
 
   map.addSource("trees", {
@@ -133,6 +127,87 @@ map.on("load", function () {
     },
   });
 
+  const popup = new mapboxgl.Popup({
+    closeButton: false,
+    closeOnClick: false,
+  });
+
+  map.on("mouseenter", "trees1", (e) => {
+    // Change the cursor style as a UI indicator.
+    map.getCanvas().style.cursor = "pointer";
+
+    // Copy coordinates array.
+    const coordinates = e.features[0].geometry.coordinates.slice();
+    const tree_id = e.features[0].properties.tree_id;
+    const spc_common = e.features[0].properties.spc_common;
+    const spc_latin = e.features[0].properties.spc_latin;
+    const address = e.features[0].properties.address;
+    const status = e.features[0].properties.status;
+    const health = e.features[0].properties.health;
+    const truckDiameter = e.features[0].properties.tree_dbh;
+    const canopyRadius = e.features[0].properties.canopy_radius_calc_ft;
+    const height = e.features[0].properties.zrange;
+    const density = e.features[0].properties.density;
+
+    if (shadedPoints[tree_id] == undefined) {
+      shadedPoints[tree_id] = [];
+    }
+    if (shadingPoints[tree_id] == undefined) {
+      shadingPoints[tree_id] = [];
+    }
+    if (otherPoints[tree_id] == undefined) {
+      otherPoints[tree_id] = [];
+    }
+    const totalPoint =
+      shadedPoints[tree_id].length +
+      shadingPoints[tree_id].length +
+      otherPoints[tree_id].length;
+    let shadedPointPercentage =
+      (shadedPoints[tree_id].length / totalPoint) * 100;
+    shadedPointPercentage = shadedPointPercentage.toFixed(2) + "%";
+    let shadingPointPercentage =
+      (shadingPoints[tree_id].length / totalPoint) * 100;
+    shadingPointPercentage = shadingPointPercentage.toFixed(2) + "%";
+    let otherPointPercentage = (otherPoints[tree_id].length / totalPoint) * 100;
+    otherPointPercentage = otherPointPercentage.toFixed(2) + "%";
+
+    // Ensure that if the map is zoomed out such that multiple
+    // copies of the feature are visible, the popup appears
+    // over the copy being pointed to.
+    while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
+      coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
+    }
+
+    // Populate the popup and set its coordinates
+    // based on the feature found.
+    let description = `
+    <div class="popup-species">
+        <h3 class="spc_common">${spc_common}</h3>
+        <h5 class="spc_latin">${spc_latin}</h5>
+      </div>
+      <div class="popup-details">
+        <p><strong>Address:</strong> ${address}</p>
+        <p><strong>Status:</strong> ${status}</p>
+        <p><strong>Health:</strong> ${health}</p>
+        <p><strong>Truck Diameter:</strong> ${truckDiameter}</p>
+        <p><strong>Canopy Radius:</strong> ${canopyRadius}</p>
+        <p><strong>Height:</strong> ${height}</p>
+        <p><strong>Density:</strong> ${density}</p>
+        <p><strong>Shaded Percent:</strong> <span class="shaded-percent">${shadedPointPercentage}</span></p>
+        <p><strong>Shading Percent:</strong> <span class="shading-percent">${shadingPointPercentage}</span></p>
+        <p><strong>Other Percent:</strong> <span class="other-percent">${otherPointPercentage}</span></p>
+      </div>
+    `;
+    document.getElementById("board").style.display = "none";
+    popup.setLngLat(coordinates).setHTML(description).addTo(map);
+  });
+
+  map.on("mouseleave", "trees1", () => {
+    map.getCanvas().style.cursor = "";
+    popup.remove();
+    document.getElementById("board").style.display = "block";
+  });
+
   //
 
   map.on("mouseenter", "trees1", function (e) {
@@ -148,209 +223,33 @@ map.on("load", function () {
     map.getCanvas().style.cursor = "";
   });
 
-  //
-  function getBuildingShadow(building) {
-    var buildingHeight = building.properties.heightroof;
-    var buildingPoints = building.geometry.coordinates[0][0];
-    var buildingBin = building.properties.bin;
-    var buildingPointsGround = [];
-    var buildingSourceName = `building${buildingBin}ShadowSourceEast`;
-    var buildingLayerName = `building${buildingBin}ShadowLayerEast`;
-
-    if (map.getLayer(buildingLayerName)) {
-      map.removeLayer(buildingLayerName);
-    }
-
-    if (map.getSource(buildingSourceName)) {
-      map.removeSource(buildingSourceName);
-    }
-    for (let i = 0; i < buildingPoints.length; i++) {
-      buildingPointsGround.push(buildingPoints[i]);
-      var x = buildingPoints[i][0];
-      var y = buildingPoints[i][1];
-      var z = buildingHeight / 3.28;
-      var buildingPointGround = [
-        x - ((z / tanAmp) * sinAz) / 84540.7,
-        y - ((z / tanAmp) * cosAz) / 111047.7,
-      ];
-      buildingPointsGround.push(buildingPointGround);
-    }
-    var hullPoints = makeHull(buildingPointsGround);
-    hulls.push(hullPoints);
-
-    map.addSource(buildingSourceName, {
-      type: "geojson",
-      data: {
-        type: "Feature",
-        geometry: {
-          type: "Polygon",
-          // These coordinates outline Maine.
-          coordinates: [hullPoints],
-        },
-      },
-    });
-
-    map.addLayer({
-      id: buildingLayerName,
-      type: "fill",
-      source: buildingSourceName, // reference the data source
-      layout: {},
-      paint: {
-        "fill-color": "#424359", // blue color fill
-        "fill-opacity": 0.2,
-      },
-    });
-  }
-
-  function shadow(date, callback) {
-    var sunPosition = SunCalc.getPosition(date, lat, lon);
-    var az = (sunPosition["azimuth"] * 180) / Math.PI;
-    var amp = (sunPosition["altitude"] * 180) / Math.PI;
-
-    var az = parseFloat(az);
-    var amp = parseFloat(amp);
-
-    sinAz = Math.sin((az * Math.PI) / 180);
-    cosAz = Math.cos((az * Math.PI) / 180);
-    tanAz = Math.tan((az * Math.PI) / 180);
-    sinAmp = Math.sin(((amp - 90) * Math.PI) / 180);
-    cosAmp = Math.cos(((amp - 90) * Math.PI) / 180);
-    tanAmp = Math.tan((-amp * Math.PI) / 180);
-
-    // map.removeLayer("tree");
-    shadedPoints = [];
-    shadingPoints = [];
-    otherPoints = [];
-
-    //add in building shadow code
-    hulls = [];
-    for (var building of selectedBuildings) {
-      getBuildingShadow(building);
-    }
-
-    //end building shadow code
-
-    //start update tree
-    for (var tree_id of selectedTreeIds) {
-      var pointCloudId = `tree${tree_id}`;
-      var pointCloudFile = `data/pointCloudJSONs/${tree_id}.json`;
-      // console.log(pointCloudFile);
-      var shadowId = `shadow${tree_id}`;
-
-      if (map.getLayer(pointCloudId)) {
-        map.removeLayer(pointCloudId);
-      }
-      if (map.getLayer(shadowId)) {
-        map.removeLayer(shadowId);
-      }
-      map.addLayer(
-        new MapboxLayer({
-          id: pointCloudId,
-          type: PointCloudLayer,
-          data: pointCloudFile,
-          getPosition: (d) => [d[1], d[0], d[2]],
-          getColor: (d) =>
-            pointColor([d[1], d[0], d[2]], hulls, tanAmp, sinAmp, cosAz),
-          sizeUnits: "feet",
-          pointSize: 3,
-          opacity: 0.8,
-          visible: true,
-        })
-      );
-
-      // //end update tree
-
-      map.addLayer(
-        new MapboxLayer({
-          id: shadowId,
-          type: PointCloudLayer,
-          data: pointCloudFile,
-          getPosition: (d) => [
-            d[1] - ((d[2] / tanAmp) * sinAz) / 84540.7,
-            d[0] - ((d[2] / tanAmp) * cosAz) / 111047.7,
-            d[2] * 0,
-          ], //approx degree to meter conversion from here: http://www.csgnetwork.com/degreelenllavcalc.html
-          getColor: (d) =>
-            pointColor([d[1], d[0], d[2]], hulls, tanAmp, sinAmp, cosAz), // [ d[2] , d[2], d[2], 255*(d[5]-d[4])-d[2] ],
-          sizeUnits: "feet",
-          pointSize: 4,
-          opacity: 0.1,
-          visible: true,
-        })
-      );
-    }
-    setTimeout(() => {
-      callback();
-    }, 500);
-  }
-
-  function stretchHoursBar() {
-    var day = parseFloat(document.getElementById("dayslider").value);
-    var hour = parseFloat(document.getElementById("hourslider").value);
-
-    var date = new Date("2022-01-01 00:00");
-    date.setDate(date.getDate() + day);
-    date.setTime(date.getTime() + hour * 60 * 60 * 1000);
-    var offset = date.getTimezoneOffset();
-
-    var dist = 183 - Math.abs(183 - day);
-    var adjusted = (dist * 114) / 183;
-
-    var times = SunCalc.getTimes(date, 40.7, -70.6);
-    var min =
-      times.sunrise.getHours() +
-      times.sunrise.getMinutes() / 60.0 -
-      offset / 60 +
-      0.5;
-    var max =
-      times.sunset.getHours() +
-      times.sunset.getMinutes() / 60.0 -
-      offset / 60 -
-      0.5;
-
-    var width = (max - min) * 4;
-    var buffer = (100 - width) / 2;
-    document.getElementById("hourslider").min = min;
-    document.getElementById("hourslider").max = max;
-    document.getElementById("hourslider").style.width = width
-      .toString()
-      .concat("%");
-    document.getElementById("hourslider").style.marginLeft = buffer
-      .toString()
-      .concat("%");
-  }
-
   map.on("click", "trees1", function (e) {
-    if (map.getLayer("tree")) {
-      map.removeLayer("tree");
-    }
-    if (map.getLayer("shadow")) {
-      map.removeLayer("shadow");
-    }
-
     var treeID = e.features[0].properties["tree_id"];
 
     lat = e.features[0].properties["Latitude"];
     lon = e.features[0].properties["longitude"];
 
-    // var pointCloudFile = "data/pointCloudJSONs/";
-    // var pointCloudFile = pointCloudFile.concat(treeID);
-    // var pointCloudFile = pointCloudFile.concat(".json");
     var pointCloudId = `tree${treeID}`;
-    var pointCloudFile = `data/pointCloudJSONs/${treeID}.json`;
-
+    var pointCloudFile = `data/pointCloudJSONs_ver2021/${treeID}.json`;
+    if (map.getLayer(pointCloudId)) {
+      return;
+    }
     map.addLayer(
       new MapboxLayer({
         id: pointCloudId,
         type: PointCloudLayer,
         data: pointCloudFile,
         getPosition: (d) => [d[1], d[0], d[2]],
-        getColor: (d) => [
-          d[3] * 255,
-          d[3] * 127 + d[3] * 127 * (d[5] - d[4] + 1),
-          d[3] * 255,
-          255 * (d[5] - d[4]),
-        ],
+        getColor: (d) =>
+          pointColor(
+            [d[1], d[0], d[2]],
+            hulls,
+            tanAmp,
+            sinAmp,
+            cosAz,
+            treeColor,
+            treeID
+          ),
         sizeUnits: "feet",
         pointSize: 3,
         opacity: 0.8,
@@ -358,17 +257,19 @@ map.on("load", function () {
       })
     );
 
-    var day = parseFloat(document.getElementById("dayslider").value);
-    var hour = parseFloat(document.getElementById("hourslider").value);
+    let day = parseFloat(document.getElementById("dayslider").value);
+    let hour = parseFloat(document.getElementById("hourslider").value);
 
     date = new Date("2022-01-01 00:00");
     date.setDate(date.getDate() + day);
     var offset = date.getTimezoneOffset();
     date.setTime(date.getTime() + hour * 60 * 60 * 1000 + offset * 60 * 1000);
 
-    updateUI(e);
+    // updateUI(e);
     selectedTreeIds.push(treeID);
-    shadow(date, htmlCountUpdate);
+    shadow(date, (e) => {
+      // console.log("shadow: plant new tree");
+    });
     stretchHoursBar();
   });
 
@@ -386,11 +287,6 @@ map.on("load", function () {
       e.features[0].properties["spc_latin"];
     document.getElementById("address").innerHTML =
       e.features[0].properties["address"];
-    //document.getElementById("zipcode").innerHTML = e.features[0].properties['zipcode'];
-    //document.getElementById("borough").innerHTML = e.features[0].properties['boroname'];
-    //document.getElementById("curb").innerHTML = e.features[0].properties['curb_loc'];
-    //document.getElementById("lat").innerHTML = lat;
-    //document.getElementById("lon").innerHTML = lon;
     document.getElementById("status").innerHTML =
       e.features[0].properties["status"];
     document.getElementById("health").innerHTML =
@@ -404,17 +300,27 @@ map.on("load", function () {
     document.getElementById("density").innerHTML =
       e.features[0].properties["density"];
   }
+  function updateDayHourBar() {
+    let day = parseFloat(document.getElementById("dayslider").value);
+    let hour = parseFloat(document.getElementById("hourslider").value);
+    date = new Date("2022-01-01 00:00");
+    date.setDate(date.getDate() + day);
+    var offset = date.getTimezoneOffset();
+    date.setTime(date.getTime() + hour * 60 * 60 * 1000 + offset * 60 * 1000);
+    let dateString = date.toString().split(" ");
+    day = `${dateString[1]} ${dateString[2]}`;
+    hour = `${dateString[4].split(":")[0]}:00 EST`;
+    document.getElementById("day").innerHTML = day;
+    document.getElementById("hour").innerHTML = hour;
+  }
 
   map.on("click", "buildingfootprints", function (e) {
     var bin = e.features[0].properties["bin"];
     selectedBins.push(bin);
-    // console.log(selectedBins);
 
     map.setFilter("buildingExtruded", ["in", "bin", ...selectedBins]);
 
     function buildingShadowUpdate(buildings) {
-      //console.log(buildings.features)
-
       for (let i = 0; i < buildings.features.length; i++) {
         if (buildings.features[i].properties.bin == bin) {
           var building = buildings.features[i];
@@ -422,43 +328,217 @@ map.on("load", function () {
         } else {
         }
       }
-
-      // return building;
     }
     buildingShadowUpdate(buildings);
   });
 
   document.getElementById("dayslider").addEventListener("input", function (h) {
-    var day = parseFloat(document.getElementById("dayslider").value);
-    var hour = parseFloat(document.getElementById("hourslider").value);
-    date = new Date("2022-01-01 00:00");
-    date.setDate(date.getDate() + day);
-    var offset = date.getTimezoneOffset();
-    date.setTime(date.getTime() + hour * 60 * 60 * 1000 + offset * 60 * 1000);
-    document.getElementById("common").innerHTML = species
-      .concat("<br> @ ")
-      .concat(date.toString().split("(").slice(0, 1));
-
-    shadow(date, htmlCountUpdate);
+    updateDayHourBar();
+    shadow(date, (e) => {
+      // console.log("shadow: stretch days bar");
+    });
 
     stretchHoursBar();
   });
 
   document.getElementById("hourslider").addEventListener("input", function (h) {
-    var day = parseFloat(document.getElementById("dayslider").value);
-    var hour = parseFloat(document.getElementById("hourslider").value);
-    //import suncalc from "suncalc";
-    date = new Date("2022-01-01 00:00");
-    date.setDate(date.getDate() + day);
-    var offset = date.getTimezoneOffset();
-    date.setTime(date.getTime() + hour * 60 * 60 * 1000 + offset * 60 * 1000);
-    document.getElementById("common").innerHTML = species
-      .concat("<br> @ ")
-      .concat(date.toString().split("(").slice(0, 1));
+    updateDayHourBar();
 
-    shadow(date, htmlCountUpdate);
+    shadow(date, (e) => {
+      // console.log("shadow: stretch hours bar");
+    });
   });
 });
+
+// shadow update utils
+function getBuildingShadow(building) {
+  var buildingHeight = building.properties.heightroof;
+  var buildingPoints = building.geometry.coordinates[0][0];
+  var buildingBin = building.properties.bin;
+  var buildingPointsGround = [];
+  var buildingSourceName = `building${buildingBin}ShadowSourceEast`;
+  var buildingLayerName = `building${buildingBin}ShadowLayerEast`;
+
+  if (map.getLayer(buildingLayerName)) {
+    map.removeLayer(buildingLayerName);
+  }
+
+  if (map.getSource(buildingSourceName)) {
+    map.removeSource(buildingSourceName);
+  }
+  for (let i = 0; i < buildingPoints.length; i++) {
+    buildingPointsGround.push(buildingPoints[i]);
+    var x = buildingPoints[i][0];
+    var y = buildingPoints[i][1];
+    var z = buildingHeight / 3.28;
+    var buildingPointGround = [
+      x - ((z / tanAmp) * sinAz) / 84540.7,
+      y - ((z / tanAmp) * cosAz) / 111047.7,
+    ];
+    buildingPointsGround.push(buildingPointGround);
+  }
+  var hullPoints = makeHull(buildingPointsGround);
+  hulls.push(hullPoints);
+
+  map.addSource(buildingSourceName, {
+    type: "geojson",
+    data: {
+      type: "Feature",
+      geometry: {
+        type: "Polygon",
+        // These coordinates outline Maine.
+        coordinates: [hullPoints],
+      },
+    },
+  });
+
+  map.addLayer({
+    id: buildingLayerName,
+    type: "fill",
+    source: buildingSourceName, // reference the data source
+    layout: {},
+    paint: {
+      "fill-color": "#424359", // blue color fill
+      "fill-opacity": 0.2,
+    },
+  });
+}
+
+function shadow(date, callback) {
+  var sunPosition = SunCalc.getPosition(date, lat, lon);
+  var az = (sunPosition["azimuth"] * 180) / Math.PI;
+  var amp = (sunPosition["altitude"] * 180) / Math.PI;
+
+  var az = parseFloat(az);
+  var amp = parseFloat(amp);
+
+  sinAz = Math.sin((az * Math.PI) / 180);
+  cosAz = Math.cos((az * Math.PI) / 180);
+  tanAz = Math.tan((az * Math.PI) / 180);
+  sinAmp = Math.sin(((amp - 90) * Math.PI) / 180);
+  cosAmp = Math.cos(((amp - 90) * Math.PI) / 180);
+  tanAmp = Math.tan((-amp * Math.PI) / 180);
+
+  shadedPoints = {};
+  shadingPoints = {};
+  otherPoints = {};
+
+  //add in building shadow code
+  hulls = [];
+  for (var building of selectedBuildings) {
+    getBuildingShadow(building);
+  }
+
+  //end building shadow code
+
+  //start update tree
+  // console.log(`From shadow func current selected trees: ${selectedTreeIds}`);
+  for (const tree_id of selectedTreeIds) {
+    var pointCloudId = `tree${tree_id}`;
+    var pointCloudFile = `data/pointCloudJSONs_ver2021/${tree_id}.json`;
+    // console.log(pointCloudFile);
+    var shadowId = `shadow${tree_id}`;
+
+    if (map.getLayer(pointCloudId)) {
+      map.removeLayer(pointCloudId);
+    }
+    if (map.getLayer(shadowId)) {
+      map.removeLayer(shadowId);
+    }
+    map.addLayer(
+      new MapboxLayer({
+        id: pointCloudId,
+        type: PointCloudLayer,
+        data: pointCloudFile,
+        getPosition: (d) => [d[1], d[0], d[2]],
+        getColor: (d) =>
+          pointColor(
+            [d[1], d[0], d[2]],
+            hulls,
+            tanAmp,
+            sinAmp,
+            cosAz,
+            treeColor,
+            tree_id
+          ),
+        sizeUnits: "feet",
+        pointSize: 3,
+        opacity: 0.8,
+        visible: true,
+      })
+    );
+
+    // //end update tree
+
+    map.addLayer(
+      new MapboxLayer({
+        id: shadowId,
+        type: PointCloudLayer,
+        data: pointCloudFile,
+        getPosition: (d) => [
+          d[1] - ((d[2] / tanAmp) * sinAz) / 84540.7,
+          d[0] - ((d[2] / tanAmp) * cosAz) / 111047.7,
+          d[2] * 0,
+        ], //approx degree to meter conversion from here: http://www.csgnetwork.com/degreelenllavcalc.html
+        getColor: (d) =>
+          pointColor(
+            [d[1], d[0], d[2]],
+            hulls,
+            tanAmp,
+            sinAmp,
+            cosAz,
+            shadowColor,
+            tree_id
+          ), // [ d[2] , d[2], d[2], 255*(d[5]-d[4])-d[2] ],
+        sizeUnits: "feet",
+        pointSize: 4,
+        opacity: 0.1,
+        visible: true,
+      })
+    );
+  }
+  setTimeout(() => {
+    htmlCountUpdate();
+  }, 500);
+
+  callback();
+}
+
+function stretchHoursBar() {
+  var day = parseFloat(document.getElementById("dayslider").value);
+  var hour = parseFloat(document.getElementById("hourslider").value);
+
+  var date = new Date("2022-01-01 00:00");
+  date.setDate(date.getDate() + day);
+  date.setTime(date.getTime() + hour * 60 * 60 * 1000);
+  var offset = date.getTimezoneOffset();
+
+  var dist = 183 - Math.abs(183 - day);
+  var adjusted = (dist * 114) / 183;
+
+  var times = SunCalc.getTimes(date, 40.7, -70.6);
+  var min =
+    times.sunrise.getHours() +
+    times.sunrise.getMinutes() / 60.0 -
+    offset / 60 +
+    0.5;
+  var max =
+    times.sunset.getHours() +
+    times.sunset.getMinutes() / 60.0 -
+    offset / 60 -
+    0.5;
+
+  var width = (max - min) * 4;
+  var buffer = (100 - width) / 2;
+  document.getElementById("hourslider").min = min;
+  document.getElementById("hourslider").max = max;
+  document.getElementById("hourslider").style.width = width
+    .toString()
+    .concat("%");
+  document.getElementById("hourslider").style.marginLeft = buffer
+    .toString()
+    .concat("%");
+}
 
 // alternative convexHull function from https://www.nayuki.io/page/convex-hull-algorithm
 function makeHull(points) {
@@ -588,11 +668,11 @@ function inside(point, vs) {
   return inside;
 }
 
-function pointColor(point, vs, tanAmp, sinAmp, cosAz) {
+function pointColor(point, vs, tanAmp, sinAmp, cosAz, mode, tree_id) {
   var x = point[0];
   var y = point[1];
   var z = point[2];
-
+  // console.log(`from pointColor func current tree_id: ${tree_id}`);
   var xg = x - ((z / tanAmp) * sinAz) / 84540.7;
   var yg = y - ((z / tanAmp) * cosAz) / 111047.7;
 
@@ -614,53 +694,88 @@ function pointColor(point, vs, tanAmp, sinAmp, cosAz) {
       isShaded = true;
     }
   }
+  let color;
 
   if (isShaded) {
-    shadedPoints.push([x, y, z]);
-    return [25 + z * 5, 50 + z * 8, 100 + z * 7];
+    if (!shadedPoints.hasOwnProperty(tree_id)) {
+      shadedPoints[tree_id] = [];
+    }
+    shadedPoints[tree_id].push(point);
+    color = [25 + z * 5, 50 + z * 8, 100 + z * 7];
   } else if (isShading) {
-    shadingPoints.push([x, y, z]);
-    return [255, 50 + z * 10, 75];
+    if (!shadingPoints.hasOwnProperty(tree_id)) {
+      shadingPoints[tree_id] = [];
+    }
+    shadingPoints[tree_id].push(point);
+    color = [255, 50 + z * 10, 75];
   } else {
-    otherPoints.push([x, y, z]);
-    return [75 + z * z * 0.75, 175 + z * 10, 10 + z * 5];
+    if (!otherPoints.hasOwnProperty(tree_id)) {
+      otherPoints[tree_id] = [];
+    }
+    otherPoints[tree_id].push(point);
+    color = [75 + z * z * 0.75, 175 + z * 10, 10 + z * 5];
   }
+  switch (mode) {
+    case "grey":
+      color = [169, 169, 169];
+      break;
+    case "green":
+      color = [75 + z * z * 0.75, 175 + z * 10, 10 + z * 5];
+      break;
+    default:
+  }
+
+  return color;
 }
 
 function htmlCountUpdate() {
-  // console.log(shadedPoints.length);
-  // console.log(shadingPoints.length);
-  // console.log(otherPoints.length);
-
-  document.getElementById("inshadow").innerHTML =
-    shadedPoints.length.toString();
-  document.getElementById("shadingbuilding").innerHTML =
-    shadingPoints.length.toString();
-  document.getElementById("shadingground").innerHTML =
-    otherPoints.length.toString();
+  let totalShaded = 0;
+  let totalShading = 0;
+  let totalOther = 0;
+  for (const tree in shadedPoints) {
+    totalShaded += shadedPoints[tree].length;
+  }
+  for (const tree in shadingPoints) {
+    totalShading += shadingPoints[tree].length;
+  }
+  for (const tree in otherPoints) {
+    totalOther += otherPoints[tree].length;
+  }
+  let totalPoint = totalShaded + totalShading + totalOther;
+  let totalShadedPercent = (totalShaded / totalPoint) * 100;
+  let totalShadingPercent = (totalShading / totalPoint) * 100;
+  let totalOtherPercent = (totalOther / totalPoint) * 100;
+  document.getElementById("numOfTrees").innerHTML =
+    selectedTreeIds.length.toString();
+  document.getElementById(
+    "shadedTree"
+  ).innerHTML = `${totalShadedPercent.toFixed(2)}%`;
+  document.getElementById(
+    "shadingTree"
+  ).innerHTML = `${totalShadingPercent.toFixed(2)}%`;
+  document.getElementById("otherTree").innerHTML = `${totalOtherPercent.toFixed(
+    2
+  )}%`;
 }
 
-const refreshButton = document.getElementById("refress-button");
-
 function refreshUIContent() {
-  document.getElementById("common").innerHTML = "Common Name";
-  document.getElementById("latin").innerHTML = "Latin Name";
-  document.getElementById("address").innerHTML = "";
-  document.getElementById("status").innerHTML = "";
-  document.getElementById("health").innerHTML = "";
-  document.getElementById("trunk").innerHTML = "";
-  document.getElementById("canopy").innerHTML = "";
-  document.getElementById("height").innerHTML = "";
-  document.getElementById("density").innerHTML = "";
-  species = "Common Name";
-  shadedPoints = [];
-  shadingPoints = [];
-  otherPoints = [];
+  // document.getElementById("common").innerHTML = "Common Name";
+  // document.getElementById("latin").innerHTML = "Latin Name";
+  // document.getElementById("address").innerHTML = "";
+  // document.getElementById("status").innerHTML = "";
+  // document.getElementById("health").innerHTML = "";
+  // document.getElementById("trunk").innerHTML = "";
+  // document.getElementById("canopy").innerHTML = "";
+  // document.getElementById("height").innerHTML = "";
+  // document.getElementById("density").innerHTML = "";
+  // species = "Common Name";
+  shadedPoints = {};
+  shadingPoints = {};
+  otherPoints = {};
   htmlCountUpdate();
 }
 
 function onRefresh() {
-  console.log("test");
   // Remove all trees and tree shadows
   for (var tree_id of selectedTreeIds) {
     var pointCloudId = `tree${tree_id}`;
@@ -696,5 +811,63 @@ function onRefresh() {
   // refresh UI content
   refreshUIContent();
 }
+
+function onGreyShadowColor() {
+  shadowColor = "grey";
+  shadow(date, (e) => {
+    console.log("changed shadow color theme");
+  });
+  greyShadowButton.setAttribute("active", "true");
+  colorShadowButton.setAttribute("active", "false");
+}
+
+function onColorShadowColor() {
+  shadowColor = "color";
+  shadow(date, (e) => {
+    console.log("changed shadow color theme");
+  });
+  colorShadowButton.setAttribute("active", "true");
+  greyShadowButton.setAttribute("active", "false");
+}
+
 // Add a click event listener to the button
+const refreshButton = document.getElementById("refress-button");
 refreshButton.addEventListener("click", onRefresh);
+
+// toggle tree shadow color between grey and color
+const greyShadowButton = document.getElementById("grey-button");
+greyShadowButton.addEventListener("click", onGreyShadowColor);
+
+const colorShadowButton = document.getElementById("color-button");
+colorShadowButton.addEventListener("click", onColorShadowColor);
+
+function onGreenTree() {
+  treeColor = "green";
+  shadow(date, (e) => {
+    console.log("changed tree color theme");
+  });
+  greenTreeButton.setAttribute("active", "true");
+  colorTreeButton.setAttribute("active", "false");
+}
+
+function onColorTree() {
+  treeColor = "color";
+  shadow(date, (e) => {
+    console.log("changed tree color theme");
+  });
+  colorTreeButton.setAttribute("active", "true");
+  greenTreeButton.setAttribute("active", "false");
+}
+
+// toggle tree color between grey and color
+
+const greenTreeButton = document.getElementById("tree-green-button");
+greenTreeButton.addEventListener("click", onGreenTree);
+
+const colorTreeButton = document.getElementById("tree-color-button");
+colorTreeButton.addEventListener("click", onColorTree);
+
+document.querySelector(".burger-menu").addEventListener("click", function () {
+  this.classList.toggle("open");
+  document.querySelector(".menu-items").classList.toggle("open");
+});

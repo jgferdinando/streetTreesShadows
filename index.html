@@ -29,15 +29,69 @@
   <body>
     <nav id="menu"></nav>
     <div id="map"></div>
-    <div id="refress-button" class="map-overlay-button">
-      <div style="display: table-cell; vertical-align: middle">
-        <div style="text-align: center">Refresh</div>
+    <div style="position: fixed; top: 3%; left: 3%; display: flex; gap: 50px">
+      <img
+        style="max-height: 30px"
+        src="asset/AAP-College-External-black.png"
+        alt="Logo"
+      />
+      <img
+        style="max-height: 30px"
+        src="asset/cornelltech_invert.png"
+        alt="Logo"
+      />
+    </div>
+    <div class="map-overlay-menu">
+      <div class="burger-menu">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+      <div class="menu-items">
+        <div class="refresh-container">
+          <div id="refress-button" class="button center-button">refresh</div>
+        </div>
+        <hr />
+        <h3>Shadow</h3>
+        <div style="display: flex">
+          <div id="grey-button" class="button">grey</div>
+          <div id="color-button" class="button">color</div>
+        </div>
+        <hr />
+        <h3>Tree</h3>
+        <div style="display: flex">
+          <div id="tree-green-button" class="button">green</div>
+          <div id="tree-color-button" class="button">color</div>
+        </div>
       </div>
     </div>
+    <div class="dashboard" id="board">
+      <div class="popup-details">
+        <p>
+          <strong>Number of Trees selected:</strong>
+          <span id="numOfTrees">0</span>
+        </p>
+        <p>
+          <strong>Shaded Percent:</strong>
+          <span class="shaded-percent" id="shadedTree">NaN%</span>
+        </p>
+        <p>
+          <strong>Shading Percent:</strong>
+          <span class="shading-percent" id="shadingTree">NaN%</span>
+        </p>
+        <p>
+          <strong>Other Percent:</strong>
+          <span class="other-percent" id="otherTree">NaN%</span>
+        </p>
+      </div>
+    </div>
+
     <div class="map-overlay">
       <div style="float: left; padding: 15px 0; width: 100%">
         <p class="control-name">
-          Day of the Year<input
+          Day of the Year :
+          <span id="day">Mar 21</span>
+          <input
             id="dayslider"
             type="range"
             class="slider"
@@ -51,7 +105,9 @@
       </div>
       <div>
         <p class="control-name">
-          Hour<input
+          Hour :
+          <span id="hour">16:00 EST</span>
+          <input
             id="hourslider"
             type="range"
             class="slider"
@@ -64,7 +120,7 @@
         </p>
       </div>
 
-      <table style="width: 100%">
+      <!-- <table style="width: 100%">
         <tr>
           <td style="width: 50%">
             <table>
@@ -135,7 +191,7 @@
             </table>
           </td>
         </tr>
-      </table>
+      </table> -->
     </div>
 
     <script type="module" src="js/nycTreesSingleShadow.js"></script>

@@ -1,11 +1,11 @@
 .map-overlay {
   font: 12px/12px "Helvetica Neue", Arial, Helvetica, sans-serif;
   position: absolute;
-  opacity: 0.7;
-  top: 73%;
+  /* opacity: 0.7; */
+  bottom: 1%;
   left: 2%;
   right: 2%;
-  height: 25%;
+  height: 15%;
   width: 96%;
   align-items: center;
   /* background-color: rgba(200, 200, 200, 0.5); */
@@ -15,20 +15,111 @@
   margin-bottom: 0%;
 }
 
-.map-overlay-button {
-  display: table;
-  overflow: hidden;
+/* burger menu styles */
+.map-overlay-menu {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3rem;
+  overflow: visible; /* Add this line */
   position: absolute;
-  top: 10%;
-  right: 5%;
-  width: 120px;
-  height: 40px;
-  background-color: rgba(200, 200, 200, 0.5);
-  color: black;
-  border: 1cap;
+  top: 3%;
+  right: 2%;
+}
+
+.burger-menu {
+  display: inline-block;
   cursor: pointer;
-  opacity: 0.7;
-  border-radius: 10%;
+  position: absolute;
+
+  z-index: 2;
+  font: 10px;
+}
+
+.burger-menu span {
+  display: block;
+  width: 30px;
+  height: 3px;
+  margin-bottom: 5px;
+  background-color: #000; /* Change the color to black */
+  transition: all 0.3s ease;
+}
+
+.burger-menu.open span:nth-child(1) {
+  transform: translateY(8px) rotate(45deg);
+}
+
+.burger-menu.open span:nth-child(2) {
+  opacity: 0;
+}
+
+.burger-menu.open span:nth-child(3) {
+  transform: translateY(-8px) rotate(-45deg);
+}
+
+.menu-items {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background-color: rgba(240, 240, 240, 0.8);
+  padding: 5% 2.5%;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.16), 0 3px 6px rgba(0, 0, 0, 0.23);
+  transition: all 0.3s ease;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 100;
+  margin-top: 3rem;
+  border-radius: 5px;
+  width: 200px;
+}
+
+.menu-items h3 {
+  font-size: 80%;
+  font-weight: bold;
+  text-align: center;
+  margin: 5px 0;
+}
+
+.menu-items hr {
+  margin: 15px 12px;
+  border: 1px solid lightgrey;
+}
+
+.menu-items.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* end of burger menu styles */
+.refresh-container {
+  text-align: center;
+}
+
+.map-overlay-menu .button {
+  flex: 1;
+  text-align: center;
+  padding: 10px;
+  margin: 15px;
+  border: solid #c0c0c0;
+  cursor: pointer;
+  cursor: pointer;
+  border-radius: 20px;
+  font-size: 14px;
+  width: 35%;
+}
+
+.center-button {
+  display: inline-block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.map-overlay-menu .button:hover {
+  background-color: rgba(190, 190, 190, 0.8);
+}
+
+.map-overlay-menu .button[active="true"] {
+  background-color: rgba(190, 190, 190, 0.8);
 }
 
 .map-overlay input {
@@ -109,6 +200,14 @@ a:active {
 .control-name {
   font: 16px/16px "Helvetica Neue", Arial, Helvetica, sans-serif;
   font-weight: 500;
+  margin-left: 20px;
+  margin-top: 4px;
+  margin-bottom: 4px;
+}
+
+.control-name-span {
+  font: 10px/10px "Helvetica Neue", Arial, Helvetica, sans-serif;
+  font-weight: 300;
   margin-left: 20px;
   margin-top: 4px;
   margin-bottom: 4px;
@@ -255,4 +354,101 @@ td {
 tr {
   padding: 0px;
   margin: 0px;
+}
+
+/* .mapboxgl-popup {
+  background-color: rgba(230, 230, 230, 0.8);
+  border: solid #c0c0c0;
+  border-radius: 30px;
+  padding: 15px;
+} */
+.mapboxgl-popup {
+  transform: none !important;
+  top: 15%;
+  left: 5%;
+}
+.mapboxgl-popup-anchor-top .mapboxgl-popup-tip,
+.mapboxgl-popup-anchor-bottom .mapboxgl-popup-tip,
+.mapboxgl-popup-anchor-center .mapboxgl-popup-tip,
+.mapboxgl-popup-anchor-left .mapboxgl-popup-tip,
+.mapboxgl-popup-anchor-right .mapboxgl-popup-tip,
+.mapboxgl-popup-anchor-bottom-right .mapboxgl-popup-tip,
+.mapboxgl-popup-anchor-bottom-left .mapboxgl-popup-tip,
+.mapboxgl-popup-anchor-top-right .mapboxgl-popup-tip,
+.mapboxgl-popup-anchor-top-left .mapboxgl-popup-tip {
+  display: none !important;
+}
+
+.mapboxgl-popup-content {
+  color: black;
+  font: 12px/12px "Helvetica Neue", Arial, Helvetica, sans-serif;
+  padding: 10px;
+  width: 250px;
+  background-color: rgba(230, 230, 230, 0.8);
+  border: solid #c0c0c0;
+  border-radius: 30px;
+}
+
+.popup-species {
+  text-align: center;
+}
+
+.spc_common {
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.spc_latin {
+  font-size: 18px;
+  font-style: italic;
+  line-height: 20px;
+  margin-bottom: 15px;
+}
+
+.popup-details {
+  font-size: 14px;
+}
+
+.popup-details p {
+  margin-bottom: 5px;
+}
+
+.popup-details strong {
+  font-weight: bold;
+}
+
+.shaded-percent,
+.shading-percent,
+.other-percent {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 5px;
+  color: white;
+  font-weight: bold;
+}
+
+.shaded-percent {
+  background-color: rgba(39, 72, 100, 255);
+}
+
+.shading-percent {
+  background-color: rgba(177, 98, 52, 255);
+}
+
+.other-percent {
+  background-color: rgba(83, 174, 36, 255);
+}
+
+.dashboard {
+  top: 15%;
+  left: 5%;
+  position: absolute;
+  color: black;
+  font: 12px/12px "Helvetica Neue", Arial, Helvetica, sans-serif;
+  padding: 10px;
+  width: 250px;
+  background-color: rgba(230, 230, 230, 0.8);
+  border: solid #c0c0c0;
+  border-radius: 30px;
 }
