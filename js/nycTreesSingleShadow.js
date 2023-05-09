@@ -5,8 +5,8 @@ const { MapboxLayer, PointCloudLayer } = deck;
 var map = new mapboxgl.Map({
   container: "map",
   style: "mapbox://styles/jgf94/ckg7ai9oo06zj19p6zw741oe2",
-  center: [-73.9867, 40.6845],
-  zoom: 20,
+  center: [-73.9794, 40.7639],
+  zoom: 10,
   pitch: 15,
   bearing: 0,
   antialias: true,
@@ -41,27 +41,26 @@ var buildingFilter = ["in", "bin"];
 var treeColor = "color";
 var shadowColor = "color";
 
-fetch("./data/tile987187buildings.geojson")
+var boroughBoundaries;
+
+fetch("./data/building_foot_prints/borough_boundaries.geojson")
   .then((response) => response.json())
-  .then((data) => (buildings = data));
-
-map.on("load", function () {
-  updateDayHourBar();
-  map.removeLayer("building");
-
-  map.addSource("trees", {
-    type: "geojson",
-    data: "./data/tile987187.geojson",
+  .then((data) => {
+    boroughBoundaries = data;
   });
 
-  map.addSource("treespoly", {
-    type: "geojson",
-    data: "./data/tile987187polygon.geojson",
-  });
+const loadBuildingData = (borough) => {
+  // load building data
+  fetch(
+    `./data/building_foot_prints/packed_TF_${borough}_buildings_footprint.geojson`
+  )
+    .then((response) => response.json())
+    .then((data) => (buildings = data));
 
+  // load mapRecource and map layer
   map.addSource("buildings", {
     type: "geojson",
-    data: "./data/tile987187buildings.geojson",
+    data: `./data/building_foot_prints/packed_TF_${borough}_buildings_footprint.geojson`,
   });
 
   map.addLayer({
@@ -87,6 +86,46 @@ map.on("load", function () {
       "fill-color": "#808080",
       "fill-opacity": 0.1,
     },
+  });
+};
+
+const freeBuildingData = () => {
+  buildings = {};
+
+  map.removeLayer("buildingExtruded");
+  map.removeLayer("buildingfootprints");
+  map.removeSource("buildings");
+
+  // remove all buildings and building shadows
+  for (var building of selectedBuildings) {
+    var buildingBin = building.properties.bin;
+    var buildingSourceName = `building${buildingBin}ShadowSourceEast`;
+    var buildingLayerName = `building${buildingBin}ShadowLayerEast`;
+
+    if (map.getLayer(buildingLayerName)) {
+      map.removeLayer(buildingLayerName);
+    }
+
+    if (map.getSource(buildingSourceName)) {
+      map.removeSource(buildingSourceName);
+    }
+  }
+  selectedBuildings = [];
+  selectedBins = [];
+};
+
+map.on("load", function () {
+  updateDayHourBar();
+  map.removeLayer("building");
+
+  map.addSource("trees", {
+    type: "geojson",
+    data: "./data/tile987187.geojson",
+  });
+
+  map.addSource("treespoly", {
+    type: "geojson",
+    data: "./data/tile987187polygon.geojson",
   });
 
   map.addLayer({
@@ -130,6 +169,91 @@ map.on("load", function () {
   const popup = new mapboxgl.Popup({
     closeButton: false,
     closeOnClick: false,
+  });
+
+  // Set the target zoom levels
+  const targetZoomLevelIn = 13;
+  const targetZoomLevelOut = 11;
+
+  // Flags to track if the target zoom levels have been reached
+  let targetZoomInReached = false;
+  let targetZoomOutReached = true;
+
+  // Function to execute when the target zoom level for zooming in is reached
+  function onTargetZoomInReached() {
+    const center = map.getCenter();
+    const centerPoint = turf.point([center.lng, center.lat]);
+    let currentBorough;
+
+    boroughBoundaries.features.some((feature) => {
+      const coordinates = feature.geometry.coordinates;
+
+      if (feature.geometry.type === "Polygon") {
+        const boroughPolygon = turf.polygon(coordinates);
+        if (turf.booleanPointInPolygon(centerPoint, boroughPolygon)) {
+          currentBorough = feature.properties.boro_name;
+          return true;
+        }
+      } else if (feature.geometry.type === "MultiPolygon") {
+        return coordinates.some((polygonCoords) => {
+          const boroughPolygon = turf.polygon(polygonCoords);
+          if (turf.booleanPointInPolygon(centerPoint, boroughPolygon)) {
+            currentBorough = feature.properties.boro_name;
+            return true;
+          }
+          return false;
+        });
+      }
+      return false;
+    });
+    const boroughMap = {
+      "Staten Island": "SI",
+      Manhattan: "MN",
+      Brooklyn: "BK",
+      Queens: "QN",
+      Bronx: "BX",
+    };
+    if (currentBorough) {
+      console.log(
+        `Target zoom level in (${targetZoomLevelIn}) reached.`,
+        "Borough:",
+        currentBorough
+      );
+      loadBuildingData(boroughMap[currentBorough]);
+    } else {
+      console.log(
+        `Target zoom level in (${targetZoomLevelIn}) reached. Current viewing location:`,
+        center,
+        "Borough: Outside NYC boroughs"
+      );
+    }
+  }
+
+  // Function to execute when the target zoom level for zooming out is reached
+  function onTargetZoomOutReached() {
+    console.log(`Target zoom level out (${targetZoomLevelOut}) reached.`);
+    freeBuildingData();
+  }
+
+  // Add a 'zoomend' event listener
+  map.on("zoomend", () => {
+    const currentZoomLevel = map.getZoom();
+
+    // Check for zooming in
+    if (currentZoomLevel >= targetZoomLevelIn && !targetZoomInReached) {
+      onTargetZoomInReached();
+      targetZoomInReached = true;
+    } else if (currentZoomLevel < targetZoomLevelIn) {
+      targetZoomInReached = false;
+    }
+
+    // Check for zooming out
+    if (currentZoomLevel <= targetZoomLevelOut && !targetZoomOutReached) {
+      onTargetZoomOutReached();
+      targetZoomOutReached = true;
+    } else if (currentZoomLevel > targetZoomLevelOut) {
+      targetZoomOutReached = false;
+    }
   });
 
   map.on("mouseenter", "trees1", (e) => {
@@ -320,14 +444,21 @@ map.on("load", function () {
 
     map.setFilter("buildingExtruded", ["in", "bin", ...selectedBins]);
 
+    // function buildingShadowUpdate(buildings) {
+    //   for (let i = 0; i < buildings.features.length; i++) {
+    //     if (buildings.features[i].properties.bin == bin) {
+    //       var building = buildings.features[i];
+    //       selectedBuildings.push(building);
+    //     } else {
+    //     }
+    //   }
+    // }
     function buildingShadowUpdate(buildings) {
-      for (let i = 0; i < buildings.features.length; i++) {
-        if (buildings.features[i].properties.bin == bin) {
-          var building = buildings.features[i];
+      buildings.features.forEach((building) => {
+        if (building.properties.bin === bin) {
           selectedBuildings.push(building);
-        } else {
         }
-      }
+      });
     }
     buildingShadowUpdate(buildings);
   });
